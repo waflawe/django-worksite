@@ -23,7 +23,7 @@ class ValidationClasses(NamedTuple):
 
 class CheckOnEditionsReturn(NamedTuple):
     an_error_occured: bool
-    error_code: Union[Literal[None], Literal["SUCCESS"], Error_code]
+    status: Union[Literal[None], Literal["SUCCESS"], Error_code]
 
 
 class UpdateSettingsMixin(DataValidationMixin):
@@ -72,10 +72,10 @@ class UpdateSettingsMixin(DataValidationMixin):
                 self._check_on_editions_description_and_site(data, settings, company,
                                                              validation_classes.description_and_site_validation_class)
         ):
-            if flag[0]:
-                return flag[1], False
-            elif not flag[0]:
-                if flag[1]: flag_success = True
+            if flag.an_error_occured:
+                return flag.status, False
+            elif flag.status:
+                flag_success = True
 
         return False, flag_success
 
@@ -95,7 +95,7 @@ class UpdateSettingsMixin(DataValidationMixin):
             files.pop(self.Fields.DESCRIPTION, ""), files.pop(self.Fields.SITE, "")
             v, is_valid, data = self.validate_received_data({}, files, settings, validation_class=validation_class)
             if is_valid:
-                self._save_photo(v, settings, company)
+                self._save_uploaded_photo(v, settings, company)
                 if not company:
                     make_center_crop.delay(settings.applicant_avatar.path)
                 return CheckOnEditionsReturn(False, "SUCCESS")
@@ -126,7 +126,7 @@ class UpdateSettingsMixin(DataValidationMixin):
         settings.timezone = timezone
         settings.save()
 
-    def _save_photo(self, validator_object: Any, settings: Union[CompanySettings, ApplicantSettings],
+    def _save_uploaded_photo(self, validator_object: Any, settings: Union[CompanySettings, ApplicantSettings],
                     company: bool) -> Literal[None]:
         path_to_photo_dir = f"{MEDIA_ROOT}logos/{settings.company.pk}/" if company else \
             f"{MEDIA_ROOT}avatars/{settings.applicant.pk}"
