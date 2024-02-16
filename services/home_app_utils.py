@@ -5,18 +5,14 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import NoReverseMatch, reverse
 
-from home_app.forms import *
+from home_app.forms import (AuthForm, ApplicantRegisterForm, CompanyRegisterForm, UploadAvatarForm, UploadLogoForm, 
+                            AnotherCompanySettingsForm)
 from services.common_utils import check_is_user_company, Error_code, RequestHost
 from services.home_app_mixins import UpdateSettingsMixin
 from typing import Literal, Union, NamedTuple
 import pytz
 
 Context = dict
-
-
-class CheckOnEditionsReturn(NamedTuple):
-    an_error_occured: bool
-    error_code: Union[Literal[None], Literal["SUCCESS"], Error_code]
 
 
 class AuthViewUtils:
@@ -28,12 +24,12 @@ class AuthViewUtils:
             user = authenticate(username=request.POST["username"], password=request.POST["password"])
             if user is not None:
                 login(request, user)
-                return AuthViewUtils._get_auth_redirect(request)
+                return AuthViewUtils._get_redirect(request)
 
         return self.get(request=request, flag_error=True, form=request.POST)
 
     @staticmethod
-    def _get_auth_redirect(request: HttpRequest) -> HttpResponse:
+    def _get_redirect(request: HttpRequest) -> HttpResponse:
         try:
             return redirect(request.GET["next"] if request.GET.get("next", False) else "/")
         except NoReverseMatch:
@@ -47,8 +43,8 @@ class RegisterViewUtils:
 
         if form.is_valid():
             u = form.save()
-            CompanySettings.objects.create(company=u) if not applicant else \
-                ApplicantSettings.objects.create(applicant=u)
+            fk = "applicant" if applicant else "company"
+            (ApplicantSettings if applicant else CompanySettings).objects.create(**{fk:u})
             return redirect(f"{reverse('home_app:auth')}?show_success=True")
         return self.get(request=request, flag_error=True, form=request.POST)
 
