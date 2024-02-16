@@ -1,0 +1,104 @@
+{% extends 'main.html' %}
+
+{% if is_user_company %}
+    {% block company %}active{% endblock %}
+{% endif %}
+
+{% block title %}{{company_username}}{% endblock %}
+
+{% block body %}
+{% if flag_success is True %}
+    <h1 class="indent text-info">Успешно.</h1>
+{% elif flag_success is False %}
+    <h1 class="indent text-danger">Что-то пошло не так.</h1>
+{% elif show_success %}
+    <div class="p-3 bg-info bg-opacity-10 border border-info border-start-0 rounded-end indent" style="width: 30%;">
+        <h3 class="text-info">Обновлено успешно.</h3>
+    </div>
+    <br>
+{% endif %}
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">
+        <tbody>
+            <tr>
+                <td style="background-color: rgb(25,25,25);" width="250">
+                    {% if company_data.company_logo_path %}
+                        <img src="{{MEDIA_URL}}{{company_data.company_logo_path}}?{{any_random_integer}}" alt="Avatar" width="{{company_data.company_logo_w}}" height="{{company_data.company_logo_h}}" >
+                    {% else %}
+                    <p style="text-align: center" class="text-white">:(</p>
+                    {% endif %}
+                    <br><br>
+                    <h5>
+                        <strong class="text-white">
+                            Вакансии:
+                        </strong><br>
+                        <a href="{% url 'worksite_app:company_vacancys' company_username %}" style="font-size: 20px">{{company_vacancys_count}} активных вакансий</a>
+                    </h5>
+
+                </td>
+                <td style="background-color: rgb(25,25,25);">
+                    <h3 class="text-white">
+                        <span style="font-size:15px">
+                            Организация
+                        </span>
+                        <br>
+                        <strong>
+                            {{company_first_name}}
+                        </strong>
+                    </h3>
+                    <h5 class="text-white">
+                        <strong>
+                            {{company_data.company_rating}}
+                        </strong>
+                        {% for class in company_data.company_star_classes_list %}
+                            <i class="fa {{class}}"></i>
+                        {% endfor %}
+                        <span style="font-size:15px">
+                            <a href="{% url 'worksite_app:company_rating' company_username %}">{{company_data.company_reviews_count}} отзывов</a>
+                        </span>
+                    </h5>
+                    {% if company_description %}
+                        <br>
+                        <span class="text-white">
+                            {% autoescape off %}
+                            {{ company_description|linebreaks }}
+                            {% endautoescape %}
+                        </span>
+                    {% endif %}
+                    {% if company_site %}
+                        <br>
+                        <h5 class="text-white">
+                            {{company_site}}
+                        </h5>
+                    {% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+{% if form %}
+    <hr style="color: green; margin-left: 1%; width:98%; margin-bottom: 0px;">
+    <table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">
+        <tbody>
+            <tr>
+                <td style="background-color: rgb(25,25,25);">
+                    <h1 class="text-white">
+                        <strong>
+                            Оставить отзыв о компании:
+                        </strong>
+                    </h1>
+                    <form method="POST">
+                        {% csrf_token %}
+                        {% for i in form %}
+                            <h3 class="indent text-white">{{i.label}}:</h3>
+                            <span class="text-white indent">{{i}}</span>
+                            <br>
+                        {% endfor %}
+                        <br>
+                        <button type="submit" class="btn btn-success indent">Отправить</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+{% endif %}
+{% endblock %}

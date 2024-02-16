@@ -1,0 +1,45 @@
+{% extends 'main.html' %}
+
+{% block title %}Add Vacancy{% endblock %}
+
+{% block worksite %}active{% endblock %}
+
+{% block body %}
+{% if flag_error %}
+<h3 class="indent text-danger">Какие-то поля заполнены неверно.</h3>
+{% endif %}
+<h1 class="indent text-white">Пожалуйста, заполните поля!</h1>
+<br>
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <h3 class="indent text-white">{{form.name.label}}:</h3>
+    <span class="indent text-white">{{ form.name }}</span>
+    <br><br>
+    <h3><label for="experience" class="indent text-white">Требуемый опыт:</label></h3>
+     <select class="form-select indent" id="experience" name="experience" style="width: 30%;">
+         {% for choice in choices_experience %}
+             <option value="{{choice.0}}">{{choice.1}}</option>
+         {% endfor %}
+     </select>
+     <br>
+     <h3><label for="select" class="indent text-white">Требуемые навыки (через запятую):</label></h3>
+     <span class="indent text-white">{{form.skills}}</span>
+     <br><br>
+    <h3><label for="city" class="indent text-white">Город:</label></h3>
+    <input class="form-control indent" list="datalistOptions" id="city" name="city" placeholder="Search city..." style="width: 30%;">
+    <datalist id="datalistOptions" >
+      {% for choice in choices_cities %}
+         <option value="{{choice}}">
+     {% endfor %}
+    </datalist>
+     <br>
+     <h3 class="indent text-white">{{form.description.label}}:</h3>
+     <span class="indent text-white">{{ form.description }}</span>
+     <br><br>
+     <h3 class="indent text-white">{{form.money.label}}:</h3>
+     <span class="indent text-white">{{ form.money }}</span>
+     <br><br>
+     <button type="submit" class="btn btn-primary indent">Добавить</button>
+
+</form>
+{% endblock %}

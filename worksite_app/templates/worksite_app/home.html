@@ -1,0 +1,89 @@
+{% extends 'main.html' %}
+
+{% block worksite %}active{% endblock %}
+
+{% block title %}Worksite{% endblock %}
+
+{% block body %}
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+<h1 class="indent text-white" style="text-align: center">Вакансии</h1>
+
+{% if show_success %}
+<h1 class="text-info indent">Успешно.</h1>
+<br>
+{% endif %}
+
+<div style="display: flex; justify-content: space-between">
+    <div style="display: flex; flex-direction: column;">
+        <form method="get" action="{% url 'worksite_app:search' %}">
+            <p style="text-align: left; padding-left: 25px;">
+                {% if company %}
+                <input type="hidden" name="company" value="{{company}}"/>
+                {% endif %}
+                <button class="btn btn-success" type="submit">
+                    Поиск
+                </button>
+            </p>
+        </form>
+    </div>
+    {% if show_button %}
+    <div style="display: flex; flex-direction: column;">
+        <form method="get" action="{% url 'worksite_app:addvacancy' %}">
+            <p style="text-align: right; padding-right: 25px;">
+                <button class="btn btn-primary" type="submit">
+                    Добавить вакансию
+                </button>
+            </p>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+{% if vacancys %}
+{% for vacancy in vacancys %}
+<table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">
+    <tbody>
+        <tr>
+            <td style="background-color: rgb(25,25,25);">
+                <h2><a href="{% url 'worksite_app:some_vacancy' vacancy.obj.pk %}">{{vacancy.obj.name}}</a><span style="float:right; font-size: 15px; color:rgb(128,128,128);">
+                        {% if show_archived and vacancy.obj.archived %}
+                            Архивировано
+                        {% endif %}
+                    </span></h2>
+                <h3 class="text-white">{{vacancy.obj.money}}$/месяц</h3>
+                <h5 class="text-white">
+                    <strong>
+                        <h5 class="text-white"><a class="alert-link" href="{% url 'worksite_app:some_company' vacancy.obj.company %}">{{vacancy.obj.company.first_name}}</a></h5>
+                    </strong>
+                </h5>
+                <h5 class="text-white"><a class="alert-link" href="?city={{vacancy.city}}">{{vacancy.city}}</a></h5>
+                <h5 class="text-white">Опыт: {{vacancy.experience}}</h5>
+            </td>
+            <td width="250" style="background-color: rgb(25,25,25);">
+                {% if vacancy.company_data.company_logo_path %}
+                    <img src="{{MEDIA_URL}}{{vacancy.company_data.company_logo_path}}?{{any_random_integer}}" alt="Avatar" width="{{vacancy.company_data.company_logo_w}}" height="{{vacancy.company_data.company_logo_h}}" >
+                {% else %}
+                {% endif %}
+            </td>
+        </tr>
+    </tbody>
+</table>
+<br>
+{% endfor %}
+{% if offset_params.buttons %}
+<div class="contaiter" style="text-align: center">
+     <p style="position: center">
+         <button class="btn btn-primary indent" type="submit">
+             <a class="link-offset-2 link-underline link-underline-opacity-0" style="color: white"
+                href="?offset={{offset_params.offset_back}}{% if offset_params.city != "False" %}&city={{offset_params.city}}{% endif %}">Назад</a>
+         </button>
+         <button class="btn btn-primary" type="submit">
+             <a class="link-offset-2 link-underline link-underline-opacity-0" style="color: white" href="?offset={{offset_params.offset_next}}&city={{offset_params.city}}">Вперед</a>
+         </button>
+     </p>
+    </div>
+{% endif %}
+{% else %}
+    <h3 class="text-white indent">Вакансии не найдены.</h3>
+{% endif %}
+{% endblock %}

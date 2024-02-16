@@ -1,0 +1,35 @@
+{% extends 'main.html' %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block body %}
+<div align="center">
+     <h1 class="text-white indent">Страница регистрации!</h1>
+
+     {% if flag_error %}
+         <h3 class="indent text-danger">Какие-то поля заполнены неверно.</h3>
+     {% endif %}
+
+     <br>
+     <form method="POST">
+         <div class="mb-3">
+             {% csrf_token %}
+             {% for i in form %}
+                 <span class="form-label indent" style="color: rgb(255, 255, 255)">{{ i.label_tag }}</span><br>
+                 <span class="indent" style="background-color: rgb(20, 20, 20); color: rgb(204, 204, 204)">{{ i }}</span><br>
+                 <span class="indent form-text"><code>({{i.help_text}})</code></span><br><br>
+             {% endfor %}
+             <p></p>
+             <button class="btn btn-primary indent" type="submit">Регистрация</button>
+         </div>
+     </form>
+     <p class="indent"><a href="{% url 'home_app:auth' %}" style="color: rgb(255, 255, 255)">Уже есть аккаунт?</a></p>
+        <p class="indent"><a href="{% url 'home_app:register' %}{% if applicant %}?applicant=False{% endif %}" style="color: rgb(255, 255, 255)">
+             {% if applicant %}
+                Хотите зарегистрировать компанию?
+             {% else %}
+                Хотите зарегистрировать соискателя?
+             {% endif %}
+         </a></p>
+</div>
+{%endblock%}

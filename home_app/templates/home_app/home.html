@@ -1,0 +1,15 @@
+{% extends 'main.html' %}
+
+{% block title %}
+Домашняя
+{% endblock %}
+
+{% block home %}active{% endblock %}
+
+{% block body %}
+{% if show_logout %}
+    <h1 class="text-info indent">Вы успешно вышли из системы.</h1>
+{% endif %}
+<h1 class="indent" style="color: rgb(255, 255, 255)">ARBITEN!! AHTUNG!!</h1>
+<h1 class="indent" style="color: rgb(255, 255, 255)">Добрый день, {% firstof request.user.username 'Аноним' %}!</h1>
+{% endblock %}

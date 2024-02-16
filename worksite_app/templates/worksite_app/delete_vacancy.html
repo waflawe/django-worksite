@@ -1,0 +1,16 @@
+{% extends 'main.html' %}
+
+{% block title %}Удаление вакансии{% endblock %}
+
+{% block worksite %}active{% endblock %}
+
+{% block body %}
+<h4 class="text-white indent">Вы уверены, что хотите удалить вакансию '{{vacancy.name}}'?</h4>
+<br>
+<form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger indent" type="submit">
+        Подтвердить
+    </button>
+</form>
+{% endblock %}

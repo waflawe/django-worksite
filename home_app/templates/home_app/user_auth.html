@@ -1,0 +1,32 @@
+{% extends 'main.html' %}
+
+{% block title %}Авторизация{% endblock %}
+
+{% block auth %}active{% endblock %}
+
+{% block body %}
+<div align="center" class="box">
+     <h1 class="text-white indent">Пожалуйста, авторизуйтесь!</h1>
+
+     {% if flag_error %}
+         <h3 class="indent text-danger">Какие-то поля заполнены неверно.</h3>
+     {% elif show_success %}
+         <h3 class="indent text-success">Успешно.</h3>
+     {% endif %}
+
+     <br>
+     <form method="POST">
+         <div class="mb-3">
+             {% csrf_token %}
+             {% for i in form %}
+                 <span class="form-label indent" style="color: rgb(255, 255, 255)">{{ i.label_tag }}</span><br>
+                 <span class="indent" style="">{{ i }}</span><br><br>
+             {% endfor %}
+             <p></p>
+             <button class="btn btn-primary indent" type="submit">Войти</button>
+         </div>
+     </form>
+     <p class="indent"><a href="{% url 'home_app:register' %}" style="color: rgb(255, 255, 255)">Нет аккаунта?</a></p>
+</div>
+
+{% endblock %}

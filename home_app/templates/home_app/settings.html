@@ -1,0 +1,56 @@
+{% extends 'main.html' %}
+
+{% block settings %}active{% endblock %}
+
+{% block title %}{{request.user.username}} Settings{% endblock %}
+
+{% block body %}
+{% if flag_success %}
+<div class="p-3 bg-info bg-opacity-10 border border-info border-start-0 rounded-end indent" style="width: 30%;">
+     <h3 class="text-info">Обновлено успешно.</h3>
+</div>
+{% elif flag_error %}
+    {% if flag_error == 1 %}
+         <div class="p-3 bg-info bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 50%;">
+             <h3 class="indent text-danger">Фотография указана неверно.</h3>
+         </div>
+    {% elif flag_error == 2 %}
+        <div class="p-3 bg-info bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 50%;">
+            <h3 class="indent text-danger">Поля с описанием компании и ее сайтом указаны неверно.</h3>
+        </div>
+    {% elif flag_error == 3 %}
+        <div class="p-3 bg-info bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 50%;">
+            <h3 class="indent text-danger">Неверная временная зона.</h3>
+        </div>
+    {% endif %}
+{% endif %}
+
+<h1 class="indent text-white">Настройки</h1>
+
+<br>
+<form method="POST" enctype="multipart/form-data">
+     {% csrf_token %}
+    <h3><label for="timezone" class="indent text-white">Временная зона: </label></h3>
+    <input class="form-control indent" list="datalistOptions" id="timezone" name="timezone" placeholder="Поиск временной зоны..." style="width: 30%;">
+    <datalist id="datalistOptions" >
+      {% for tz in tzs %}
+         <option value="{{tz}}">
+     {% endfor %}
+    </datalist>
+    <br>
+    {% for i in photo_form %}
+        <h3 class="indent form-label" style="color: rgb(255, 255, 255)">{{i.label}}</h3>
+        <span class="indent text-white">{{ i }}</span>
+        <br><br>
+    {% endfor %}
+    {% if another_company_settings_form %}
+         {% for i in another_company_settings_form %}
+             <h3 class="indent form-label" style="color: rgb(255, 255, 255)">{{i.label}}</h3>
+             <span class="indent text-white">{{ i }}</span>
+             <br><br>
+         {% endfor %}
+    {% endif %}
+     <br>
+     <button type="submit" class="btn btn-primary indent">Сохранить</button>
+</form>
+{% endblock %}

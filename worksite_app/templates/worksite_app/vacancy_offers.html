@@ -1,0 +1,71 @@
+{% extends 'main.html' %}
+{% load tz %}
+
+{% block title %}Отклики{% endblock %}
+
+{% block worksite %}active{% endblock %}
+
+{% block body %}
+<h1 class="indent text-white" style="text-align: center">Отклики</h1>
+
+{% if offers %}
+    {% for offer in offers %}
+        <table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">
+        <tbody>
+            <tr style="line-height: 14px;">
+                <td style="background-color: rgb(20,20,20);" width="18%">
+                    <h4 class="text-white" style="text-align: center">{{offer.obj.applicant.username}}</h4>
+                </td>
+                <td style="background-color: rgb(20,20,20);">
+                    <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+                        <div class="container-fluid">
+                            <div class="collapse navbar-collapse" id="navbarNav">
+                                 <ul class="navbar-nav">
+                                     <li class="nav-item hv" style="margin-left: 8px;">
+                                          <form method="get" action="{% url 'worksite_app:apply_offer' offer.obj.pk %}">
+                                                <button class="btn btn-success indent" type="submit">
+                                                    Принять оффер
+                                                </button>
+                                            </form>
+                                     </li>
+                                 </ul>
+                            </div>
+                            <span style="float:right; font-size: 15px; color:rgb(128,128,128);">
+                                {% if tzone %}
+                                    {{offer.obj.time_added|timezone:tzone|date:"H:i, d/m/Y"}}
+                                {% else %}
+                                    {{offer.obj.time_added|date:"H:i, d/m/Y"}}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </nav>
+                </td>
+            </tr>
+            <tr>
+                <td style="background-color: rgb(25,25,25);" width="18%">
+                     {% if offer.path_to_applicant_avatar %}
+                         <p style="text-align: center">
+                            <img src="{{MEDIA_URL}}{{offer.path_to_applicant_avatar}}?{{any_random_integer}}" alt="Avatar" width="200" height="200" align="moddle">
+                         </p>
+                     {% else %}
+                        <p style="text-align: center" class="text-white">:(</p>
+                     {% endif %}
+                </td>
+                <td style="background-color: rgb(25,25,25);">
+                     {% if offer.obj.resume_text %}
+                         {% autoescape off %}
+                         <h5><span class="text-white">{{offer.obj.resume_text|linebreaks}}</span></h5>
+                         {% endautoescape %}
+                     {% elif offer.obj.resume %}
+                         <h1><a class="alert-link text-success" href="/media/{{offer.obj.resume}}">Просмотреть резюме</a></h1>
+                     {% endif %}
+                </td>
+            </tr>
+        </tbody>
+        </table>
+        <br>
+    {% endfor %}
+{% else %}
+    <h3 class="text-white indent">Отклики не найдены.</h3>
+{% endif %}
+{% endblock %}

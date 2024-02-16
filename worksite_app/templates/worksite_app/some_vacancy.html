@@ -1,0 +1,148 @@
+{% extends 'main.html' %}
+{% load tz %}
+
+{% block title %}{{vacancy.obj.name}}{% endblock %}
+
+{% block worksite %}active{% endblock %}
+
+{% block body %}
+{% if flag_success is not None %}
+    {% if flag_success is True %}
+    <h1 class="text-info indent">Успешно.</h1>
+    <br>
+    {% elif error_code == 1 %}
+        <h1 class="text-danger indent">Какие-то поля указаны неверно.</h1>
+        <br>
+    {% elif error_code == 2 %}
+        <h1 class="text-danger indent">Файл с резюме должен быть .pdf.</h1>
+        <br>
+    {% elif error_code == 3 %}
+        <h1 class="text-danger indent">Вы должны указать либо файл с резюме, либо оставить сообщение.</h1>
+        <br>
+    {% endif %}
+{% endif %}
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">
+        <tbody>
+         <tr>
+             <td style="background-color: rgb(28,28,28);">
+                 <h1 class="indent text-white">{{vacancy.obj.name}}
+                    <span style="float:right; font-size: 15px; color:rgb(128,128,128);">
+                        {% if tzone %}
+                            {% if tzone != 'Default' %}
+                                {{vacancy.obj.time_added|timezone:tzone|date:"H:i, d/m/Y"}}
+                            {% else %}
+                                {{vacancy.obj.time_added|date:"H:i, d/m/Y"}}
+                            {% endif %}
+                        {% else %}
+                            {{vacancy.obj.time_added|date:"H:i, d/m/Y"}}
+                        {% endif %}
+                    </span>
+                </h1>
+             </td>
+         </tr>
+        </tbody>
+    </table>
+    <table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">
+        <tbody>
+            <tr>
+                <td style="background-color: rgb(25,25,25);">
+                    <h2 class="indent text-white">{{vacancy.obj.money}}$ в месяц</h2>
+                    <h5 class="indent text-white">Необходимый опыт: {{vacancy.experience}}</h5>
+                    <h5 class="indent text-white">Необходимые навыки: </h5>
+                    {% if vacancy.skills == '' %}
+                        <h5 class="text-white" style="margin-left:50px">Никаких</h5>
+                    {% else %}
+                        <h5 class="text-white" style="margin-left:50px">{{vacancy.skills}}</h5>
+                    {% endif %}
+                    {% if view_offer %}
+                    <button onclick="window.location.href='{% url 'worksite_app:some_vacancy' vacancy.obj.pk %}#offer';" class="btn btn-success indent" style="width: 30%">Откликнуться</button>
+                    {% endif %}
+                    {% if view_all_offers %}
+                    <form method="get" action="{% url 'worksite_app:vacancy_offers' vacancy.obj.pk %}">
+                        <button class="btn btn-success indent" type="submit" style="width: 30%">
+                            Просмотреть отклики ({{offers_count}})
+                        </button>
+                    </form>
+                    {% endif %}
+                    <br>
+                    {% if view_all_offers %}
+                    <form method="get" action="{% url 'worksite_app:vacancy_delete' vacancy.obj.pk %}">
+                        <button class="btn btn-danger indent" type="submit" style="width: 30%">
+                            Удалить эту вакансию
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+                <td width="300" style="background-color: rgb(25,25,25);">
+                    {% if company_data.company_logo_path %}
+					<img src="{{MEDIA_URL}}{{company_data.company_logo_path}}?{{any_random_integer}}" alt="Avatar" width="{{company_data.company_logo_w}}" height="{{company_data.company_logo_h}}" >
+                    {% else %}
+                    <p style="text-align: center" class="text-white">:(</p>
+                    {% endif %}
+                    <h5 class="text-white">
+                        <strong>
+                            <h5 class="text-white"><a class="alert-link" href="{% url 'worksite_app:some_company' vacancy.obj.company %}">{{vacancy.obj.company.first_name}}</a></h5>
+                        </strong>
+                    </h5>
+                    <h5 class="text-white">
+                        <strong>
+                            {{company_data.company_rating}}
+                        </strong>
+                        {% for class in company_data.company_star_classes_list %}
+                            <i class="fa {{class}}"></i>
+                        {% endfor %}
+                        <span style="font-size:15px">
+                            <a href="{% url 'worksite_app:company_rating' vacancy.obj.company.username %}">{{company_data.company_reviews_count}} отзывов</a>
+                        </span>
+                    </h5>
+                    <h5 class="text-white"><a class="alert-link" href="{% url 'worksite_app:home' %}?city={{vacancy.city}}">{{vacancy.city}}</a></h5>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+{% if vacancy.obj.description %}
+    <table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">
+        <tbody>
+            <tr>
+                <td style="background-color: rgb(25,25,25);">
+                    <div class="text-white indent">
+                        <h1>Описание:</h1>
+                        <h5 class="indent">
+                            {% autoescape off %}
+                            {{vacancy.obj.description|linebreaks}}
+                            {%endautoescape%}
+                        </h5>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+{% endif %}
+{% if view_offer %}
+<hr style="color: green; margin-left: 1%; width:98%; margin-bottom: 0px;">
+<table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;" id="offer">
+    <tbody>
+        <tr>
+            <td style="background-color: rgb(25,25,25);">
+                <h1 class="indent text-white">
+                    <strong>
+                        Оставить оффер:
+                    </strong>
+                </h1>
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for i in offer_form %}
+                    <h3 class="indent text-white">{{i.label}}:</h3>
+                    <span class="indent text-white">{{i}}</span>
+                    <br>
+                    {% endfor %}
+                    <br>
+                    <button type="submit" class="btn btn-success indent">Отправить</button>
+                </form>
+            </td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

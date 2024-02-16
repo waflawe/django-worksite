@@ -1,0 +1,53 @@
+{% extends 'main.html' %}
+
+{% block title %}Search{% endblock %}
+
+{% block worksite %}active{% endblock %}
+
+{% block body %}
+<br>
+<h1 class="indent text-white" style="text-align: center">Поиск</h1>
+<form method="get">
+    <div class="indent" style="display: table">
+         <h3><label for="search" class="indent text-white">Ваш запрос:</label></h3>
+         <input class="form-control me-2 indent" type="search" placeholder="Поиск" aria-label="Search" name="search" id="search" style="width: 40%; display: table-cell">
+         <input type="checkbox" class="btn-check" name="name_search" id="name_search" style="margin-left: 15px;" {% if 'title' in search_keys %}checked{% endif %} autocomplete="off">
+         <label class="btn btn-outline-secondary" for="name_search" style="margin-left: 15px">Название</label>
+         <input type="checkbox" class="btn-check" name="description_search" id="description_search" style="margin-left: 15px;" {% if 'question' in search_keys %}checked{% endif %} autocomplete="off">
+         <label class="btn btn-outline-secondary" for="description_search" style="margin-left: 15px;">Описание</label>
+    </div>
+    <br>
+    <div class="indent">
+         <h4><label for="city" class="indent text-white">Город:</label></h4>
+         <input class="form-control indent" list="datalistOptions" id="city" name="city" placeholder="Поиск города..." style="width: 33%;">
+         <datalist id="datalistOptions" >
+             {% for choice in choices_cities %}
+                <option value="{{choice}}">
+             {% endfor %}
+         </datalist>
+    </div>
+    <br>
+    <div class="indent" style="display: table">
+         <h4><label for="celery_from" class="indent text-white">Зарплата:</label></h4>
+         <input class="form-control indent" id="celery_from" name="celery_from" placeholder="От" style="width: 20%; display: table-cell">
+         <input class="form-control indent" name="celery_to" placeholder="До" style="width: 20%; display: table-cell">
+    </div>
+    <br>
+    <div class="indent">
+        <h4><label class="indent text-white">Опыт:</label></h4>
+        {% for ex in experience_values %}
+            <div class="form-check form-check-inline indent">
+              <input class="form-check-input" type="checkbox" id="inlineCheckbox{{ex.0}}" name="ex{{ex.0}}">
+              <label class="form-check-label text-white" for="inlineCheckbox{{ex.0}}">{{ex.1}}</label>
+            </div>
+        {% endfor %}
+    </div>
+    <br>
+    {% for p in get_params %}
+        <input type="hidden" name="{{p.0}}" value="{{p.1}}"/>
+    {% endfor %}
+<button class="btn btn-success indent" type="submit" style="margin-left: 49px">Поиск</button>
+</form>
+<br>
+
+{% endblock %}

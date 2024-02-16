@@ -1,0 +1,59 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{MEDIA_URL}}index.css">
+    <title>{% block title %}{% endblock %}</title>
+</head>
+<body style="background-color: rgb(33, 33, 33);">
+<div>
+     <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+         <div class="container-fluid">
+             <a class="navbar-brand {% block home %} {% endblock %}" aria-current="page" href="{% url 'home_app:home' %}">
+                 <img src="{{MEDIA_URL}}nanana.jpeg" alt="madxlyeternity" width="40" height="40"> <!-- 4.6k pp -->
+             </a>
+             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label ="Toggle navigation">
+                 <span class="navbar-toggler-icon"></span>
+             </button>
+             <div class="collapse navbar-collapse" id="navbarNav">
+                 <ul class="navbar-nav">
+                     <li class="nav-item hv" style="margin-left: 8px;">
+                         <a class="nav-link {% block worksite %} {% endblock %}" aria-current="page" href="{% url 'worksite_app:home' %}">Worksite</a>
+                     </li>
+                     {% if request.user.is_authenticated %}
+                        {% if request.user.first_name != '' %}
+                             <li class="nav-item hv" style="margin-left: 15px;">
+                                 <a class="nav-link {% block company %} {% endblock %}" href="{% url 'worksite_app:some_company' request.user.username %}">Моя компания</a>
+                             </li>
+                            <li class="nav-item hv" style="margin-left: 15px;">
+                                 <a class="nav-link {% block company_applyed_offers %} {% endblock %}" href="{% url 'worksite_app:company_applyed_offers' %}">Работники</a>
+                             </li>
+                        {% else %}
+                            <li class="nav-item hv" style="margin-left: 15px;">
+                                 <a class="nav-link {% block my_offers %} {% endblock %}" href="{% url 'worksite_app:my_offers' %}">Мои офферы</a>
+                             </li>
+                        {% endif %}
+                         <li class="nav-item hv" style="margin-left: 15px;">
+                             <a class="nav-link {% block settings %} {% endblock %}" href="{% url 'home_app:settings' %}">Настройки</a>
+                         </li>
+                         <li class="nav-item hv" style="margin-left: 15px;">
+                             <a class="nav-link btn btn-danger" href="{% url 'home_app:logout' %}">Выход</a>
+                         </li>
+                     {% else %}
+                     <li class="nav-item hv" style="margin-left: 15px;">
+                         <a class="nav-link {% block auth %} {% endblock %}" href="{% url 'home_app:auth' %}">Вход</a>
+                     </li>
+                     {% endif %}
+                 </ul>
+             </div>
+         </div>
+     </nav>
+     <br>
+    {% block body %}
+    {% endblock %}
+</body>
+</html>

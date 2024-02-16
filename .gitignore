@@ -1,0 +1,9 @@
+journal.py
+dump.rdb
+.env
+.idea/
+media/avatars/
+media/logos/
+media/offers/
+venv
+**/__pycache__/
