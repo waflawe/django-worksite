@@ -1,4 +1,4 @@
-from django.http import HttpRequest, Http404
+from django.http import HttpRequest
 from rest_framework.request import Request
 from django.contrib.auth.models import User
 
@@ -34,3 +34,11 @@ def get_timezone(request: HttpRequest | Request) -> Literal[False] | str:
         else:
             return ApplicantSettings.objects.get(applicant=request.user).timezone
     return False
+
+
+def get_path_to_crop_photo(path: str) -> str:
+    splitted_path = path.split("/")
+    filename = splitted_path.pop()
+    name, extension = filename.split(".")
+    splitted_path.append(f"{name}_crop.{extension}")
+    return "/".join(splitted_path)

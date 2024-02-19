@@ -40,7 +40,7 @@ class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModel
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def create(self, request, *args, **kwargs) -> Response:
-        vacancy = self.add_vacancy(request.user, request.data)
+        vacancy = self.add_vacancy(request.data, request.user)
         return Response(status=status.HTTP_201_CREATED if vacancy else status.HTTP_400_BAD_REQUEST)
 
 
@@ -55,7 +55,7 @@ class ApplicantOffersViewSet(GenericViewSet, mixins.ListModelMixin, mixins.Creat
 
     def create(self, request, *args, **kwargs) -> Response:
         flags = self.add_offer(request.user, request.data["vacancy"], request.data, request.data)
-        return Response(status=status.HTTP_201_CREATED if flags[0] else status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_201_CREATED if flags.success else status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs) -> Response:
         self.withdraw_offer(request, self.kwargs[self.lookup_url_kwarg])
@@ -71,31 +71,32 @@ class UpdateSettingsAPIView(APIView, UpdateSettingsMixin):
 
     def post(self, request: Request):
         flag = self.update_settings(request, request.data, request.data)
-        if flag[1]:
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_200_OK if flag.flag_success else status.HTTP_400_BAD_REQUEST)
 
 
 class GetCompanyRatingsAPIView(ListAPIView):
     serializer_class = validation_class = RatingsSerializer
+    lookup_url_kwarg = "uname"
 
     def get_queryset(self):
-        return Rating.objects.filter(company__username=self.kwargs["uname"]).order_by("-time_added")
+        return Rating.objects.filter(company__username=self.kwargs[self.lookup_url_kwarg]).order_by("-time_added")
 
 
 class GetCompanyDetailAPIView(ListAPIView):
     serializer_class = CompanyDetailSerializer
     pagination_class = None
+    lookup_url_kwarg = "uname"
 
     def get_queryset(self):
-        return User.objects.filter(username=self.kwargs["uname"])
+        return User.objects.filter(username=self.kwargs[self.lookup_url_kwarg])
 
 
-class GetVacancyOffersAPIView(ListAPIView, CheckPermissionsToSeeVacancy):
+class GetVacancyOffersAPIView(ListAPIView, CheckPermissionsToSeeVacancyOffersAndDeleteVacancy):
     serializer_class = OffersSerializer
+    lookup_url_kwarg = "ids"
 
     def get_queryset(self):
-        vacancy = self.check_perms(self.request, self.kwargs["ids"])
+        vacancy = self.check_perms(self.request, self.kwargs[self.lookup_url_kwarg])
         return Offer.objects.filter(vacancy=vacancy, withdrawn=False).order_by("-time_added")
 
     def get_serializer_context(self):

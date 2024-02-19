@@ -8,6 +8,11 @@
 {% block body %}
 <h1 class="indent text-white" style="text-align: center">Принятые отклики</h1>
 
+{% if show_success %}
+    <h1 class="text-info indent">Успешно.</h1>
+    <br>
+{% endif %}
+
 {% if offers %}
     {% for offer in offers %}
         <table class="table table-bordered border-light-subtle" style="margin-left: 1%; width:98%; margin-bottom: 0px;">

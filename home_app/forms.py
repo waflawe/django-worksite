@@ -67,8 +67,8 @@ class CompanyRegisterForm(ApplicantRegisterForm):
         self.fields["email"].label = "Почта"
         self.fields["first_name"].label = "Название компании"
 
-        for field, input in {"first_name": TextInput, "email": EmailInput}.items():
-            self.fields[field].widget = input(attrs={
+        for field, input_ in {"first_name": TextInput, "email": EmailInput}.items():
+            self.fields[field].widget = input_(attrs={
                 'style': 'background-color: rgb(20, 20, 20); color: rgb(204, 204, 204)'
             })
 

@@ -1,5 +1,8 @@
 from celery import shared_task
+
 from worksite.settings import BASE_DIR
+from services.common_utils import get_path_to_crop_photo
+
 import os
 from PIL import Image
 from PIL.Image import Image as Im
@@ -7,13 +10,11 @@ from typing import Literal
 
 
 @shared_task
-def make_center_crop(applicant_avatar_path) -> Literal[None]:
+def make_center_crop(applicant_avatar_path: str) -> Literal[None]:
     """ Функция для обрезки изображения по центру. """
 
-    t = applicant_avatar_path.split(".")
-    new_crop_image_path = BASE_DIR / (t[0] + "_crop." + t[1])
     _center_crop(Image.open(os.path.join(BASE_DIR / applicant_avatar_path))).save(os.path.join(
-        new_crop_image_path
+        get_path_to_crop_photo(applicant_avatar_path)
     ))
 
 

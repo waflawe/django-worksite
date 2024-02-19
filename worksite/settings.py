@@ -86,6 +86,14 @@ DATABASES = {
 CELERY_BROKER_URL = env("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
 
+# DEFAULT AVATARS\LOGOS FILENAMES
+DEFAULT_COMPANY_LOGO_FILENAME = "default_company_logo.png"
+DEFAULT_APPLICANT_AVATAR_FILENAME = "default_applicant_avatar.jpg"
+
+# PATHS TO CUSTOM LOGOS AND AVATARS DIRS
+CUSTOM_COMPANY_LOGOS_DIR = "logos"
+CUSTOM_APPLICANT_AVATARS_DIR = "avatars"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

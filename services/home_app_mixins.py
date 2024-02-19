@@ -8,7 +8,7 @@ from home_app.models import CompanySettings, ApplicantSettings
 from services.worksite_app_mixins import DataValidationMixin
 from home_app.forms import UploadAvatarForm, UploadLogoForm, AnotherCompanySettingsForm
 from tasks.home_app_tasks import make_center_crop
-from worksite.settings import BASE_DIR, MEDIA_ROOT
+from worksite.settings import BASE_DIR, MEDIA_ROOT, CUSTOM_COMPANY_LOGOS_DIR, CUSTOM_APPLICANT_AVATARS_DIR
 from apiv1.serializers import ApplicantSettingsSerializer, CompanySettingsSerializer
 
 from typing import Dict, Tuple, Union, Literal, NamedTuple, Any, Type
@@ -22,8 +22,13 @@ class ValidationClasses(NamedTuple):
 
 
 class CheckOnEditionsReturn(NamedTuple):
-    an_error_occured: bool
+    an_error_occurred: bool
     status: Union[Literal[None], Literal["SUCCESS"], Error_code]
+
+
+class UpdateSettingsReturn(NamedTuple):
+    status: Union[Literal[None], Literal["SUCCESS"], Error_code]
+    flag_success: bool
 
 
 class UpdateSettingsMixin(DataValidationMixin):
@@ -40,8 +45,7 @@ class UpdateSettingsMixin(DataValidationMixin):
         DESCRIPTION = "company_description"
         SITE = "company_site"
 
-    def update_settings(self, request: HttpRequest | Request, data: Dict, files: Dict) \
-            -> Tuple[Literal[False] | int, bool]:
+    def update_settings(self, request: HttpRequest | Request, data: Dict, files: Dict) -> UpdateSettingsReturn:
         if not request.user.is_authenticated: raise Http404
         validation_classes, company = self._get_validation_classes(request)
         return self._check_and_update_settings(request, data, files, validation_classes, company)
@@ -61,7 +65,7 @@ class UpdateSettingsMixin(DataValidationMixin):
 
     def _check_and_update_settings(self, request: HttpRequest | Request, data: Dict, files: Dict,
                                    validation_classes: ValidationClasses, company: bool) \
-            -> Tuple[Literal[False] | int, bool]:
+            -> UpdateSettingsReturn:
         flag_success = False
         settings = get_object_or_404(CompanySettings, company=request.user) \
             if company else get_object_or_404(ApplicantSettings, applicant=request.user)
@@ -72,12 +76,12 @@ class UpdateSettingsMixin(DataValidationMixin):
                 self._check_on_editions_description_and_site(data, settings, company,
                                                              validation_classes.description_and_site_validation_class)
         ):
-            if flag.an_error_occured:
-                return flag.status, False
+            if flag.an_error_occurred:
+                return UpdateSettingsReturn(status=flag.status, flag_success=False)
             elif flag.status:
                 flag_success = True
 
-        return False, flag_success
+        return UpdateSettingsReturn(status=False, flag_success=flag_success)
 
     def _check_on_editions_timezone(self, data: Dict, settings: Union[ApplicantSettings, CompanySettings]) \
             -> CheckOnEditionsReturn:
@@ -128,8 +132,8 @@ class UpdateSettingsMixin(DataValidationMixin):
 
     def _save_uploaded_photo(self, validator_object: Any, settings: Union[CompanySettings, ApplicantSettings],
                     company: bool) -> Literal[None]:
-        path_to_photo_dir = f"{MEDIA_ROOT}logos/{settings.company.pk}/" if company else \
-            f"{MEDIA_ROOT}avatars/{settings.applicant.pk}"
+        path_to_photo_dir = f"{MEDIA_ROOT}{CUSTOM_COMPANY_LOGOS_DIR}/{settings.company.pk}/" if company else \
+            f"{MEDIA_ROOT}{CUSTOM_APPLICANT_AVATARS_DIR}/{settings.applicant.pk}"
         try:
             for file in os.listdir(BASE_DIR / path_to_photo_dir):
                 os.remove(os.path.join(BASE_DIR, path_to_photo_dir, file))

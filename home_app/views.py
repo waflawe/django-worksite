@@ -1,18 +1,19 @@
 from django.shortcuts import render
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, Http404
 from django.views.generic import View
 from django.contrib.auth import logout
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from services.home_app_utils import *
-from services.common_utils import *
+from services.common_utils import check_is_user_auth
 
 from typing import Optional, Mapping
 
 
 def _get_registered_user(request: HttpRequest) -> bool:
     applicant = request.GET.get("applicant", 'True')
+    # TEST THIS SHIT
     if isinstance(applicant, list): applicant = applicant[0]
     if applicant == 'True': return True
     if applicant == 'False': return False
@@ -28,7 +29,7 @@ def home_view(request: HttpRequest) -> HttpResponse:
 class AuthView(View):
     def get(self, request: HttpRequest, flag_error: Optional[bool] = False, form: Optional[Mapping] = None) -> \
             HttpResponse:
-        if check_is_user_auth(request=request): return redirect("/")
+        if check_is_user_auth(request): return redirect("/")
         return render(request, "home_app/user_auth.html", context={
             "form": AuthForm(form),
             "flag_error": flag_error,
@@ -36,11 +37,13 @@ class AuthView(View):
         })
 
     def post(self, request: HttpRequest) -> HttpResponse:
-        if check_is_user_auth(request=request): return redirect("/")
+        if check_is_user_auth(request): return redirect("/")
         return AuthViewUtils.auth_view_utils(self, request)
 
 
-class LogoutView(View):
+class LogoutView(View, LoginRequiredMixin):
+    raise_exception = True
+
     def get(self, request: HttpRequest) -> HttpResponse:
         logout(request=request)
         return redirect(f'{reverse("home_app:home")}?show_logout=True')

@@ -23,7 +23,7 @@ ValidationClass = Union[Type[serializers.ModelSerializer] | Type[forms.ModelForm
 
 
 class AddOfferReturn(NamedTuple):
-    is_success: bool
+    success: bool
     message: Union[Literal["SUCCESS"], Error_code]
 
 
@@ -36,10 +36,7 @@ class CheckPermissionsToSeeVacancy(object):
         except ObjectDoesNotExist:
             raise Http404
         if vacancy.archived:
-            try:
-                applicant = Offer.objects.select_related("applicant").get(vacancy=vacancy, applyed=True).applicant
-            except ObjectDoesNotExist:
-                raise Http404
+            applicant = Offer.objects.select_related("applicant").get(vacancy=vacancy, applyed=True).applicant
             if not (vacancy.company == request.user or request.user == applicant):
                 raise Http404
         if vacancy.deleted:
@@ -60,11 +57,11 @@ class CheckPermissionsToSeeVacancyOffersAndDeleteVacancy(object):
 
 
 class VacancySearchMixin(object):
-    """ Миксин для выполнения icontains поиска по определенным полям вакансии. """
+    """ Миксин для составления запроса (класс Q()) на icontains поиск по определенным полям вакансии. """
 
     search_fields = ("name", "description")
 
-    def search(self, params: Dict[str, str]) -> Q:
+    def search(self, params: Dict[str, str], **kwargs) -> Q:
         query = Q()
         for field in self.search_fields:
             query = query | self._field_icontains_search(params, field)
@@ -80,9 +77,9 @@ class VacancySearchMixin(object):
 class VacancyFilterMixin(object):
     """ Миксин для фильтрации вакансий по городу, зарплате, требуемому опыту работы. """
 
-    def filter(self, params: Dict[str, str], company: Optional[User] = None,
-               only_not_archived: Optional[bool] = True) -> Dict:
-        city_kwargs = self._city_filter(params, company, only_not_archived)
+    def filter(self, params: Dict[str, str], company_filter: Optional[User] = None,
+               only_not_archived: Optional[bool] = True, **kwargs) -> Dict:
+        city_kwargs = self._city_filter(params, company_filter, only_not_archived)
         celery_kwargs = self._celery_filter(params)
         experience_kwargs = self._experience_filter(params)
         return city_kwargs | celery_kwargs | experience_kwargs | {"deleted": False}
@@ -120,8 +117,7 @@ class DataValidationMixin(object):
 
     validation_class: ValidationClass = None  # ссылка на класс-валидатор, должна быть переопределена
 
-    def validate_received_data(self, data: Dict, files: Optional[Dict] = None,
-                               instance: Optional[Instance] = None,
+    def validate_received_data(self, data: Dict, files: Dict, instance: Optional[Instance] = None,
                                validation_class: Optional[ValidationClass] = None) -> Tuple[Any, bool, Dict]:
         validation_class = validation_class if validation_class else self.validation_class
         validator_object = None
@@ -151,17 +147,17 @@ class DataValidationMixin(object):
 class AddVacancyMixin(DataValidationMixin):
     """ Миксин для добавления вакансии. """
 
-    def add_vacancy(self, author: User, data: Dict) -> Vacancy | Literal[False]:
+    def add_vacancy(self, data: Dict, author: User) -> Vacancy | Literal[False]:
         try:
             vacancy = Vacancy(company=author, experience=data["experience"], skills=str(data["skills"]))
         except KeyError:
             return False
-        v, is_valid, data_ = self.validate_received_data(data, instance=vacancy)
+        v, is_valid, data_ = self.validate_received_data(data, {}, instance=vacancy)
 
         try:
             if is_valid and data["city"] in FILTERED_CITIES and data["experience"] in EXPERIENCE_CHOICES_VALID_VALUES:
                 return v.save()
-        except Exception as ex:
+        except KeyError:
             return False
         return False
 
@@ -170,7 +166,7 @@ class AddVacancyMixin(DataValidationMixin):
 
 
 class AddOfferMixin(DataValidationMixin):
-    """ Миксин для создания оффера компании от соискателя. """
+    """ Миксин для создания оффера на вакансию от имени соискателя. """
 
     def add_offer(self, applicant: User, ids: int, data: Dict, files: Dict) -> AddOfferReturn:
         vacancy = get_object_or_404(Vacancy, pk=ids)
@@ -211,9 +207,10 @@ class AddRatingMixin(DataValidationMixin):
         company = get_object_or_404(User, username=uname)
         if not self.check_perms(applicant, company):
             raise PermissionDenied
-        rating = Rating(applicant=applicant, company=company)
+        instance = Rating(applicant=applicant, company=company)
+        # TEST THIS SHIT
         data = dict(data | {"applicant": applicant.pk, "rating": int(data["rating"]), "comment": str(data["comment"])})
-        v, is_valid, data = self.validate_received_data(data, instance=rating)
+        v, is_valid, data = self.validate_received_data(data, {}, instance=instance)
 
         if is_valid:
             v.save()
@@ -223,6 +220,7 @@ class AddRatingMixin(DataValidationMixin):
         return False
 
     def check_perms(self, applicant: User, company: User) -> bool:
+        if not applicant.is_authenticated: return False
         offer = Offer.objects.filter(
             vacancy__in=Vacancy.objects.filter(company=company).all(), applyed=True, applicant=applicant
         ).exists()
@@ -234,15 +232,15 @@ class AddRatingMixin(DataValidationMixin):
 
     def get_data_to_serializer(self, data: Dict, files: Dict) -> Dict:
         another_data = {
-            "applicant": data.get("applicant"),
-            "rating": data.get("rating"),
+            "applicant": data["applicant"],
+            "rating": data["rating"],
             "comment": str(data["comment"])
         }
         return data | another_data
 
 
 class ApplyOfferMixin(object):
-    """ Миксин для создания предложения компании от имени соискателя. """
+    """ Миксин для принятия оффера от соискателя на вакансию. """
 
     def apply_offer(self, request: Request | HttpRequest, ids: int) -> Literal[None] | NoReturn:
         offer = self.check_perms(request, ids)
@@ -251,13 +249,13 @@ class ApplyOfferMixin(object):
         offer.vacancy.save()
         offer.save()
 
-    def check_perms(self, request: HttpRequest, ids: int) -> Offer | NoReturn:
+    def check_perms(self, request: Request | HttpRequest, ids: int) -> Offer | NoReturn:
         try:
             offer = Offer.objects.select_related("vacancy").get(pk=ids)
         except ObjectDoesNotExist:
             raise Http404
         vacancy = offer.vacancy
-        if (not request.user.is_authenticated) or (vacancy.company.username != request.user.username):
+        if (not request.user.is_authenticated) or (vacancy.company != request.user):
             raise PermissionDenied
         elif vacancy.archived or vacancy.deleted or offer.withdrawn or offer.applyed:
             raise Http404
@@ -286,15 +284,13 @@ class WithdrawOfferMixin(object):
             offer = Offer.objects.select_related("vacancy").get(pk=ids)
         except ObjectDoesNotExist:
             raise Http404
-        if offer.withdrawn or offer.applyed:
-            raise Http404
-        elif offer.applicant != request.user:
+        if offer.withdrawn or offer.applyed or offer.applicant != request.user:
             raise PermissionDenied
         return offer
 
 
 class CompanyApplyedOffersMixin(object):
-    """ Миксин для получения всех предложений соискателей компании, которые (предложения) были одобрены. """
+    """ Миксин для получения всех предложений соискателей к компании, которые (предложения) были одобрены. """
 
     def get_company_applyed_offers(self, company: User, check_perms: Optional[bool] = True) -> QuerySet:
         if check_perms:
@@ -303,4 +299,4 @@ class CompanyApplyedOffersMixin(object):
                 .filter(vacancy__company=company, applyed=True).order_by("-time_added").all())
 
     def check_perms(self, company: User) -> Literal[None] | NoReturn:
-        if not check_is_user_company(company): raise Http404
+        if not check_is_user_company(company): raise PermissionDenied

@@ -56,7 +56,7 @@
                         <h5 class="text-white"><a class="alert-link" href="{% url 'worksite_app:some_company' vacancy.obj.company %}">{{vacancy.obj.company.first_name}}</a></h5>
                     </strong>
                 </h5>
-                <h5 class="text-white"><a class="alert-link" href="?city={{vacancy.city}}">{{vacancy.city}}</a></h5>
+                <h5 class="text-white"><a class="alert-link" href="?city={{vacancy.obj.city}}">{{vacancy.obj.city}}</a></h5>
                 <h5 class="text-white">Опыт: {{vacancy.experience}}</h5>
             </td>
             <td width="250" style="background-color: rgb(25,25,25);">

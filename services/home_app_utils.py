@@ -7,9 +7,10 @@ from django.urls import NoReverseMatch, reverse
 
 from home_app.forms import (AuthForm, ApplicantRegisterForm, CompanyRegisterForm, UploadAvatarForm, UploadLogoForm, 
                             AnotherCompanySettingsForm)
-from services.common_utils import check_is_user_company, Error_code, RequestHost
+from services.common_utils import check_is_user_company, RequestHost
 from services.home_app_mixins import UpdateSettingsMixin
-from typing import Literal, Union, NamedTuple
+from home_app.models import CompanySettings, ApplicantSettings
+
 import pytz
 
 Context = dict
@@ -44,7 +45,7 @@ class RegisterViewUtils:
         if form.is_valid():
             u = form.save()
             fk = "applicant" if applicant else "company"
-            (ApplicantSettings if applicant else CompanySettings).objects.create(**{fk:u})
+            (ApplicantSettings if applicant else CompanySettings).objects.create(**{fk: u})
             return redirect(f"{reverse('home_app:auth')}?show_success=True")
         return self.get(request=request, flag_error=True, form=request.POST)
 
@@ -72,8 +73,8 @@ class SettingsViewUtils(UpdateSettingsMixin):
 
         return self._get_response(view_self, request, flag_error, flag_success, company)
 
-    def _get_response(self, view_self, request: HttpRequest, flag_error: bool | int, flag_success: bool, company: bool) \
-            -> HttpResponse:
+    def _get_response(self, view_self, request: HttpRequest, flag_error: bool | int,
+                      flag_success: bool, company: bool) -> HttpResponse:
         if company and flag_success:
             return redirect(f"{reverse('worksite_app:some_company', kwargs={'uname': request.user.username})}"
                             f"?show_success=True")

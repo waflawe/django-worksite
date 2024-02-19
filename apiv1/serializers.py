@@ -73,7 +73,8 @@ class CompanyDetailSerializer(serializers.ModelSerializer):
         
     def get_company_info(self, company):
         data = CompanySettingsSerializer(instance=get_object_or_404(CompanySettings, company=company))
-        return data.data | {"vacancys_count": Vacancy.objects.filter(company=company, archived=False).count()}
+        return data.data | {"vacancys_count": (Vacancy.objects.filter(company=company, archived=False,
+                                                                      deleted=False).count())}
 
     def get_date_joined(self, company):
         return set_time_to_user_timezone(self.context["request"], company.date_joined, "date_joined")
@@ -87,7 +88,7 @@ class OffersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Offer
-        fields = ["applicant", "resume", "resume_text", "time_added", "time_applyed"]
+        fields = ["id", "applicant", "resume", "resume_text", "time_added", "time_applyed"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
