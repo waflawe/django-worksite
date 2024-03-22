@@ -2,7 +2,7 @@
 
 {% block settings %}active{% endblock %}
 
-{% block title %}{{request.user.username}} Settings{% endblock %}
+{% block title %}{{request.user.username}} settings{% endblock %}
 
 {% block body %}
 {% if flag_success %}
@@ -10,19 +10,9 @@
      <h3 class="text-info">Обновлено успешно.</h3>
 </div>
 {% elif flag_error %}
-    {% if flag_error == 1 %}
-         <div class="p-3 bg-info bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 50%;">
-             <h3 class="indent text-danger">Фотография указана неверно.</h3>
-         </div>
-    {% elif flag_error == 2 %}
-        <div class="p-3 bg-info bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 50%;">
-            <h3 class="indent text-danger">Поля с описанием компании и ее сайтом указаны неверно.</h3>
-        </div>
-    {% elif flag_error == 3 %}
-        <div class="p-3 bg-info bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 50%;">
-            <h3 class="indent text-danger">Неверная временная зона.</h3>
-        </div>
-    {% endif %}
+     <div class="p-3 bg-info bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 40%;">
+         <h3 class="indent text-danger">{{flag_error}}</h3>
+     </div>
 {% endif %}
 
 <h1 class="indent text-white">Настройки</h1>
@@ -38,18 +28,11 @@
      {% endfor %}
     </datalist>
     <br>
-    {% for i in photo_form %}
-        <h3 class="indent form-label" style="color: rgb(255, 255, 255)">{{i.label}}</h3>
+    {% for i in form %}
+        <h3 class="indent form-label text-white">{{i.label}}</h3>
         <span class="indent text-white">{{ i }}</span>
         <br><br>
     {% endfor %}
-    {% if another_company_settings_form %}
-         {% for i in another_company_settings_form %}
-             <h3 class="indent form-label" style="color: rgb(255, 255, 255)">{{i.label}}</h3>
-             <span class="indent text-white">{{ i }}</span>
-             <br><br>
-         {% endfor %}
-    {% endif %}
      <br>
      <button type="submit" class="btn btn-primary indent">Сохранить</button>
 </form>

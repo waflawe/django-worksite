@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "home_app.apps.HomeAppConfig",
     "rest_framework",
     "rest_framework.authtoken",
+    "drf_spectacular",
     "djoser",
     "apiv1.apps.Apiv1Config",
     'django.contrib.admin',
@@ -94,6 +95,10 @@ DEFAULT_APPLICANT_AVATAR_FILENAME = "default_applicant_avatar.jpg"
 CUSTOM_COMPANY_LOGOS_DIR = "logos"
 CUSTOM_APPLICANT_AVATARS_DIR = "avatars"
 
+...
+
+DEFAULT_USER_TIMEZONE = "Europe/London"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -140,6 +145,7 @@ MEDIA_ROOT = 'media/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
@@ -150,3 +156,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20
 }
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Worksite API',
+    'VERSION': '1.1.0',
+}

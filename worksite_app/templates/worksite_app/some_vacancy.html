@@ -10,15 +10,9 @@
     {% if flag_success is True %}
     <h1 class="text-info indent">Успешно.</h1>
     <br>
-    {% elif error_code == 1 %}
-        <h1 class="text-danger indent">Какие-то поля указаны неверно.</h1>
-        <br>
-    {% elif error_code == 2 %}
-        <h1 class="text-danger indent">Файл с резюме должен быть .pdf.</h1>
-        <br>
-    {% elif error_code == 3 %}
-        <h1 class="text-danger indent">Вы должны указать либо файл с резюме, либо оставить сообщение.</h1>
-        <br>
+    {% else %}
+    <h1 class="text-danger indent">{{error_code}}</h1>
+    <br>
     {% endif %}
 {% endif %}
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">

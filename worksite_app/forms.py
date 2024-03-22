@@ -28,7 +28,7 @@ class AddVacancyForm(forms.ModelForm):
 
     class Meta:
         model = Vacancy
-        fields = ("name", "description", "money", "experience", "city", "skills")
+        fields = "name", "description", "money", "experience", "city", "skills"
 
 
 class AddOfferForm(forms.ModelForm):
@@ -40,7 +40,7 @@ class AddOfferForm(forms.ModelForm):
 
     class Meta:
         model = Offer
-        fields = ("resume", "resume_text")
+        fields = "resume", "resume_text"
 
 
 class AddRatingForm(forms.ModelForm):
@@ -52,4 +52,4 @@ class AddRatingForm(forms.ModelForm):
 
     class Meta:
         model = Rating
-        fields = ("rating", "comment")
+        fields = "rating", "comment"

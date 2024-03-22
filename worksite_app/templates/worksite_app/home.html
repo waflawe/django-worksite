@@ -70,19 +70,24 @@
 </table>
 <br>
 {% endfor %}
-{% if offset_params.buttons %}
 <div class="contaiter" style="text-align: center">
      <p style="position: center">
-         <button class="btn btn-primary indent" type="submit">
-             <a class="link-offset-2 link-underline link-underline-opacity-0" style="color: white"
-                href="?offset={{offset_params.offset_back}}{% if offset_params.city != "False" %}&city={{offset_params.city}}{% endif %}">Назад</a>
-         </button>
-         <button class="btn btn-primary" type="submit">
-             <a class="link-offset-2 link-underline link-underline-opacity-0" style="color: white" href="?offset={{offset_params.offset_next}}&city={{offset_params.city}}">Вперед</a>
-         </button>
+        {% if offset_params.offset_back.view_button %}
+            <button class="btn btn-primary" type="submit">
+                 <a class="link-offset-2 link-underline link-underline-opacity-0" style="color: white" href="?offset={{offset_params.offset_back}}&city={{offset_params.city}}">
+                     Назад
+                 </a>
+             </button>
+        {% endif %}
+        {% if offset_params.offset_next.view_button %}
+            <button class="btn btn-primary" type="submit">
+                 <a class="link-offset-2 link-underline link-underline-opacity-0" style="color: white" href="?offset={{offset_params.offset_next}}&city={{offset_params.city}}">
+                     Вперед
+                 </a>
+             </button>
+        {% endif %}
      </p>
-    </div>
-{% endif %}
+</div>
 {% else %}
     <h3 class="text-white indent">Вакансии не найдены.</h3>
 {% endif %}

@@ -1,30 +1,37 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, reverse
 from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
 from django.core.exceptions import PermissionDenied
 
-from services.worksite_app_utils import *
-from .forms import *
-from .constants import EXPERIENCE_CHOICES, FILTERED_CITIES
+from services.worksite_app_utils import (
+    HomeViewUtils, SomeVacancyViewUtils, SomeCompanyViewUtils, CompanyVacancysViewUtils, CompanyRatingViewUtils,
+    CompanyApplyedOffersUtils, AddVacancyViewUtils, VacancyOffersViewUtils, ApplyOfferViewUtils, DeleteVacancyUtils,
+    MyOffersViewUtils, WithdrawOfferUtils, SearchViewUtils
+)
+from services.common_utils import check_is_user_company
+from worksite_app.forms import AddVacancyForm
+from worksite_app.constants import EXPERIENCE_CHOICES, FILTERED_CITIES
 
 from typing import Optional
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    return render(request, "worksite_app/home.html", context=HomeViewUtils().home_utils(request))
+    context = HomeViewUtils().home_utils(request)
+    return render(request, "worksite_app/home.html", context=context)
 
 
 class AddVacancyView(View):
-    def get(self, request: HttpRequest, form_data: Optional[dict] = None, flag_error: Optional[bool] = False) -> \
+    def get(self, request: HttpRequest, form_data: Optional[dict] = None, flag_error: Optional[str] = False) -> \
             HttpResponse:
         if not check_is_user_company(request.user):
             raise PermissionDenied
-        return render(request, "worksite_app/add_vacancy.html", context={
+        context = {
             "choices_experience": EXPERIENCE_CHOICES,
             "choices_cities": FILTERED_CITIES,
             "flag_error": flag_error,
             "form": AddVacancyForm(form_data)
-        })
+        }
+        return render(request, "worksite_app/add_vacancy.html", context=context)
 
     def post(self, request: HttpRequest) -> HttpResponse:
         if not check_is_user_company(request.user):
@@ -35,59 +42,49 @@ class AddVacancyView(View):
 class SomeVacancyView(View):
     def get(self, request: HttpRequest, ids: int, flag_success: Optional[bool] = None,
             error_code: Optional[int] = None) -> HttpResponse:
-        return render(request, "worksite_app/some_vacancy.html", context=SomeVacancyViewUtils().some_vacancy_utils(
-            request,
-            ids,
-            flag_success,
-            error_code
-        ))
+        context = SomeVacancyViewUtils().some_vacancy_utils(request, ids, flag_success, error_code)
+        return render(request, "worksite_app/some_vacancy.html", context=context)
 
     def post(self, request: HttpRequest, ids: int) -> HttpResponse:
         return SomeVacancyViewUtils().some_vacancy_post_utils(self, request, ids)
 
 
 class SomeCompanyView(View):
-    def get(self, request: HttpRequest, uname: str, flag_success: Optional[bool] = None) -> HttpResponse:
-        return render(request, "worksite_app/some_company.html", context=SomeCompanyViewUtils().some_company_utils(
-            request,
-            uname,
-            flag_success
-        ))
+    def get(self, request: HttpRequest, uname: str, error: Optional[str] = None) -> HttpResponse:
+        context = SomeCompanyViewUtils().some_company_utils(request, uname, error)
+        return render(request, "worksite_app/some_company.html", context=context)
 
     def post(self, request: HttpRequest, uname: str) -> HttpResponse:
         return SomeCompanyViewUtils().some_company_post_utils(self, request, uname)
 
 
 def company_rating(request: HttpRequest, uname: str) -> HttpResponse:
-    return render(request, "worksite_app/company_rating.html", context=CompanyRatingViewUtils
-                  .company_rating_utils(request, uname))
+    context = CompanyRatingViewUtils.company_rating_utils(request, uname)
+    return render(request, "worksite_app/company_rating.html", context=context)
 
 
 def company_vacancys(request: HttpRequest, uname: str) -> HttpResponse:
-    return render(request, "worksite_app/home.html",
-                  context=CompanyVacancysViewUtils().company_vacancys_utils(request, uname))
+    context = CompanyVacancysViewUtils().company_vacancys_utils(request, uname)
+    return render(request, "worksite_app/home.html", context=context)
 
 
 def vacancy_offers(request: HttpRequest, ids: int) -> HttpResponse:
-    return render(request, "worksite_app/vacancy_offers.html", context=VacancyOffersViewUtils().vacancy_offers_utils(
-        request,
-        ids
-    ))
+    context = VacancyOffersViewUtils().vacancy_offers_utils(request, ids)
+    return render(request, "worksite_app/vacancy_offers.html", context=context)
 
 
 class ApplyOfferView(View):
     def get(self, request: HttpRequest, ids: int) -> HttpResponse:
-        return render(request, "worksite_app/apply_confirm.html", context=ApplyOfferViewUtils().apply_offer_utils(
-            request,
-            ids
-        ))
+        context = ApplyOfferViewUtils().apply_offer_utils(request, ids)
+        return render(request, "worksite_app/apply_confirm.html", context=context)
 
     def post(self, request: HttpRequest, ids: int) -> HttpResponse:
         return ApplyOfferViewUtils().apply_offer_post_utils(request, ids)
 
 
 def my_offers(request: HttpRequest) -> HttpResponse:
-    return render(request, "worksite_app/my_offers.html", context=MyOffersViewUtils.my_offers_utils(request))
+    context = MyOffersViewUtils.my_offers_utils(request)
+    return render(request, "worksite_app/my_offers.html", context=context)
 
 
 def search(request: HttpRequest) -> HttpResponse:

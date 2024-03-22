@@ -55,7 +55,7 @@
                          <h6><span class="text-white">{{offer.resume_text|linebreaks}}</span></h6>
                          {% endautoescape %}
                      {% elif offer.resume %}
-                         <h1><a class="alert-link text-success" href="/media/{{offer.resume}}">Просмотреть резюме</a></h1>
+                         <h1><a class="alert-link text-success" href="{{MEDIA_URL}}{{offer.resume}}">Просмотреть резюме</a></h1>
                      {% endif %}
                 </td>
                 <td style="background-color: rgb(25,25,25);" width="15%">

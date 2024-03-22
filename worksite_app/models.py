@@ -28,6 +28,9 @@ class Vacancy(models.Model):
     def __str__(self):
         return f"{self.name}"
 
+    class Meta:
+        ordering = "-time_added",
+
 
 class Offer(models.Model):
     """ Модель откликов соискателей на вакансии. """
@@ -43,7 +46,7 @@ class Offer(models.Model):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(
+            models.CheckConstraint(   # проверка на то, что резюме написано текстом или отправлен файл с резюме.
                 check=(
                               ~Q(resume="") &
                               Q(resume_text__isnull=True)
@@ -54,6 +57,10 @@ class Offer(models.Model):
                 name='only_one_resume',
             )
         ]
+        ordering = "-time_added",
+
+    def __str__(self):
+        return f"{self.pk} offer by {self.applicant}"
 
 
 class Rating(models.Model):
@@ -64,3 +71,6 @@ class Rating(models.Model):
     rating = models.PositiveIntegerField(choices=RATINGS, validators=[MaxValueValidator(5)])
     comment = models.TextField(max_length=2048, validators=[MinLengthValidator(64)], null=True)
     time_added = models.DateTimeField(auto_now_add=True, null=True)
+
+    class Meta:
+        ordering = "-time_added",

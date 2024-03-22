@@ -7,10 +7,11 @@
 {% block title %}{{company_username}}{% endblock %}
 
 {% block body %}
-{% if flag_success is True %}
-    <h1 class="indent text-info">Успешно.</h1>
-{% elif flag_success is False %}
-    <h1 class="indent text-danger">Что-то пошло не так.</h1>
+{% if error %}
+    <div class="p-3 bg-danger bg-opacity-10 border border-danger border-start-0 rounded-end indent" style="width: 30%;">
+        <h3 class="text-danger">{{error}}</h3>
+    </div>
+    <br>
 {% elif show_success %}
     <div class="p-3 bg-info bg-opacity-10 border border-info border-start-0 rounded-end indent" style="width: 30%;">
         <h3 class="text-info">Обновлено успешно.</h3>
@@ -68,7 +69,7 @@
                     {% if company_site %}
                         <br>
                         <h5 class="text-white">
-                            {{company_site}}
+                            <a href="{{company_site}}">{{company_site}}</a>
                         </h5>
                     {% endif %}
                 </td>

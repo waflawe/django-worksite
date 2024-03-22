@@ -2,8 +2,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from django.forms import TextInput, PasswordInput, EmailInput, ClearableFileInput, URLInput, Textarea
 from django.core.validators import MaxLengthValidator, MinLengthValidator
+from django.contrib.auth.models import User
 
-from home_app.models import *
+from home_app.models import CompanySettings, ApplicantSettings
 
 
 class AuthForm(forms.Form):
@@ -33,8 +34,8 @@ class ApplicantRegisterForm(UserCreationForm):
         self.fields["password1"].label = "Пароль"
         self.fields["password2"].label = "Подтверждение пароля"
 
-        for field, input in {"username": TextInput, "password1": PasswordInput, "password2": PasswordInput}.items():
-            self.fields[field].widget = input(attrs={
+        for field, input_ in {"username": TextInput, "password1": PasswordInput, "password2": PasswordInput}.items():
+            self.fields[field].widget = input_(attrs={
                 'style': 'background-color: rgb(20, 20, 20); color: rgb(204, 204, 204)'
             })
 
@@ -73,7 +74,7 @@ class CompanyRegisterForm(ApplicantRegisterForm):
             })
 
 
-class UploadPhotoForm(forms.ModelForm):
+class UploadPhotoFormMixin(forms.ModelForm):
     def __init__(self, photo_field, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields[photo_field].required, self.fields[photo_field].label = False, "Логотип компании:" \
@@ -83,7 +84,7 @@ class UploadPhotoForm(forms.ModelForm):
         })
 
 
-class UploadAvatarForm(UploadPhotoForm):
+class ApplicantSettingsForm(UploadPhotoFormMixin):
     class Meta:
         model = ApplicantSettings
         fields = ("applicant_avatar",)
@@ -91,24 +92,24 @@ class UploadAvatarForm(UploadPhotoForm):
     def __init__(self, *args, **kwargs):
         super().__init__("applicant_avatar", *args, **kwargs)
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            self.instance.save(update_fields=["applicant_avatar"])
+        return instance
 
-class UploadLogoForm(UploadPhotoForm):
+
+class CompanySettingsForm(UploadPhotoFormMixin):
+    company_description = forms.CharField(widget=Textarea(attrs={
+        'style': 'background-color: rgb(20, 20, 20); color: rgb(204, 204, 204)'
+    }), required=False, label="Описание компании:", validators=[MaxLengthValidator(5000), MinLengthValidator(64)])
+    company_site = forms.URLField(widget=URLInput(attrs={
+        'style': 'background-color: rgb(20, 20, 20); color: rgb(204, 204, 204)'
+    }), required=False, label="Сайт компании:")
+
     class Meta:
         model = CompanySettings
-        fields = ("company_logo",)
+        fields = ("company_logo", "company_description", "company_site")
 
     def __init__(self, *args, **kwargs):
         super().__init__("company_logo", *args, **kwargs)
-
-
-class AnotherCompanySettingsForm(forms.ModelForm):
-    class Meta:
-        model = CompanySettings
-        fields = ("company_description", "company_site")
-
-    company_description = forms.CharField(widget=Textarea(attrs={
-            'style': 'background-color: rgb(20, 20, 20); color: rgb(204, 204, 204)'
-        }), required=False, label="Описание компании:", validators=[MaxLengthValidator(5000), MinLengthValidator(64)])
-    company_site = forms.URLField(widget=URLInput(attrs={
-            'style': 'background-color: rgb(20, 20, 20); color: rgb(204, 204, 204)'
-        }), required=False, label="Сайт компании:")

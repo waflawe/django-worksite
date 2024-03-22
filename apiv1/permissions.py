@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated, SAFE_METHODS
 
 
 class IsApplicant(BasePermission):
@@ -17,8 +17,8 @@ class IsCompany(BasePermission):
         return request.user.first_name != ""
 
 
-class VacancyOperationsPermission(BasePermission):
+class IsAuthenticatedAndIsCompanyOrReadOnly(BasePermission):
     def has_permission(self, request, view):
-        if view.action == "create":
-            return IsAuthenticated().has_permission(request, view) and IsCompany().has_permission(request, view)
-        return True
+        if request.method in SAFE_METHODS:
+            return True
+        return IsAuthenticated().has_permission(request, view) and IsCompany().has_permission(request, view)

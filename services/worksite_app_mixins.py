@@ -1,36 +1,32 @@
+from django.http import HttpRequest, Http404
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.db.models import Q, Avg
 from django.db.models.query import QuerySet
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
-from django.db import IntegrityError
+from django.db import IntegrityError, models
 from django import forms
-from django.db import models
 from rest_framework import serializers
 from rest_framework.request import Request
-from django.http import HttpRequest, Http404
-from django.utils import timezone
 
 from worksite_app.constants import FILTERED_CITIES, EXPERIENCE_CHOICES_VALID_VALUES
 from worksite_app.models import Vacancy, Offer, Rating
 from home_app.models import CompanySettings
-from services.common_utils import Error_code, check_is_user_company
+from services.common_utils import check_is_user_company, RequestHost, get_error_field, DefaultPOSTReturn
+from error_messages.worksite_error_messages import VacancyErrors, OfferErrors, RatingErrors
 
-from typing import Optional, Dict, Literal, Union, NamedTuple, NoReturn, Tuple, Any, Type
+from typing import Optional, Dict, Literal, Union, NoReturn, Tuple, Any, Type
 
 Instance = models.Model
 ValidationClass = Union[Type[serializers.ModelSerializer] | Type[forms.ModelForm]]
 
 
-class AddOfferReturn(NamedTuple):
-    success: bool
-    message: Union[Literal["SUCCESS"], Error_code]
-
-
 class CheckPermissionsToSeeVacancy(object):
     """ Проверка прав на просмотр конкретной вакансии. """
 
-    def check_perms(self, request: HttpRequest | Request, ids: int) -> Vacancy | NoReturn:
+    @staticmethod
+    def check_perms(request: HttpRequest | Request, ids: int) -> Vacancy | NoReturn:
         try:
             vacancy = Vacancy.objects.select_related("company").get(pk=ids)
         except ObjectDoesNotExist:
@@ -47,7 +43,8 @@ class CheckPermissionsToSeeVacancy(object):
 class CheckPermissionsToSeeVacancyOffersAndDeleteVacancy(object):
     """ Проверка прав на просмотр откликов соискателей на вакансию и на удаление вакансии. """
 
-    def check_perms(self, request: HttpRequest | Request, ids: int) -> Vacancy | NoReturn:
+    @staticmethod
+    def check_perms(request: HttpRequest | Request, ids: int) -> Vacancy | NoReturn:
         vacancy = get_object_or_404(Vacancy, pk=ids)
         if vacancy.archived or vacancy.deleted:
             raise Http404
@@ -59,7 +56,7 @@ class CheckPermissionsToSeeVacancyOffersAndDeleteVacancy(object):
 class VacancySearchMixin(object):
     """ Миксин для составления запроса (класс Q()) на icontains поиск по определенным полям вакансии. """
 
-    search_fields = ("name", "description")
+    search_fields = "name", "description"
 
     def search(self, params: Dict[str, str], **kwargs) -> Q:
         query = Q()
@@ -133,7 +130,7 @@ class DataValidationMixin(object):
                 validator_object,
                 "validated_data" if hasattr(validator_object, "validated_data") else "cleaned_data"
             )
-        return None, False, {}
+        raise TypeError(f"Invalid validation class: {validation_class}")
 
     def get_data_to_serializer(self, data: Dict, files: Dict) -> Dict:  # должен быть переопределен
         """
@@ -147,19 +144,14 @@ class DataValidationMixin(object):
 class AddVacancyMixin(DataValidationMixin):
     """ Миксин для добавления вакансии. """
 
-    def add_vacancy(self, data: Dict, author: User) -> Vacancy | Literal[False]:
-        try:
-            vacancy = Vacancy(company=author, experience=data["experience"], skills=str(data["skills"]))
-        except KeyError:
-            return False
-        v, is_valid, data_ = self.validate_received_data(data, {}, instance=vacancy)
+    request_host = None   # переменная-источник запроса. Имеет значение RequestHost.APIVIEW или RequestHost.VIEW
 
-        try:
-            if is_valid and data["city"] in FILTERED_CITIES and data["experience"] in EXPERIENCE_CHOICES_VALID_VALUES:
-                return v.save()
-        except KeyError:
-            return False
-        return False
+    def add_vacancy(self, data: Dict, author: User) -> DefaultPOSTReturn:
+        v, is_valid, data_ = self.validate_received_data(data, {}, instance=Vacancy(company=author))
+        if is_valid:
+            v.save()
+            return DefaultPOSTReturn(True)
+        return DefaultPOSTReturn(False, VacancyErrors[get_error_field(self.request_host, v)])
 
     def get_data_to_serializer(self, data: Dict, files: Dict) -> Dict:
         return data
@@ -168,58 +160,64 @@ class AddVacancyMixin(DataValidationMixin):
 class AddOfferMixin(DataValidationMixin):
     """ Миксин для создания оффера на вакансию от имени соискателя. """
 
-    def add_offer(self, applicant: User, ids: int, data: Dict, files: Dict) -> AddOfferReturn:
+    request_host = None   # переменная-источник запроса. Имеет значение RequestHost.APIVIEW или RequestHost.VIEW
+
+    def add_offer(self, applicant: User, ids: int, data: Dict, files: Dict) -> DefaultPOSTReturn:
         vacancy = get_object_or_404(Vacancy, pk=ids)
-        self.check_perms(applicant, vacancy)
-        offer = Offer(applicant=applicant, vacancy=vacancy, resume=files.get("resume", None))
-        v, is_valid, data_ = self.validate_received_data(data, files, instance=offer)
+        AddOfferMixin.check_perms(applicant, vacancy)
+        resume_collection = (data if self.request_host == RequestHost.APIVIEW else files)
+        offer = Offer(applicant=applicant, vacancy=vacancy,
+                      resume=resume_collection.get("resume", None), resume_text=data.get("resume_text", ""))
+        v, is_valid, data_ = self.validate_received_data(data, {}, instance=offer)
 
         if is_valid:
             try:
                 if v.instance.resume_text == "": v.instance.resume_text = None
                 v.save()
-                return AddOfferReturn(True, "SUCCESS")
+                return DefaultPOSTReturn(True)
             except IntegrityError:
-                return AddOfferReturn(False, 3)
-        return AddOfferReturn(False, 1)
+                return DefaultPOSTReturn(False, OfferErrors["vacancy"])
+        return DefaultPOSTReturn(False, OfferErrors[get_error_field(self.request_host, v)])
 
-    def check_perms(self, applicant: User, vacancy: Vacancy) -> Literal[None] | NoReturn:
+    @staticmethod
+    def check_perms(applicant: User, vacancy: Vacancy, raise_exception: Optional[bool] = True) -> bool | NoReturn:
         if vacancy.archived or vacancy.deleted:
-            raise Http404
+            if raise_exception:
+                raise Http404
+            return False
         offers_exists = Offer.objects.filter(vacancy=vacancy, applicant=applicant).exists()
         if not applicant.is_authenticated or check_is_user_company(applicant) or offers_exists:
-            raise PermissionDenied
+            if raise_exception:
+                raise PermissionDenied
+            return False
+        return True
 
     def get_data_to_serializer(self, data: Dict, files: Dict) -> Dict:
-        try:
-            data_to_serializer = (data | files | {"vacancy": int(str(data.get("vacancy", None)))})
-        except ValueError:
-            raise Http404
-        if data.get("resume_text", None):
-            data_to_serializer["resume_text"] = str(data.get("resume_text", None))
-        return data_to_serializer
+        return data
 
 
 class AddRatingMixin(DataValidationMixin):
     """ Миксин для добавления отзыва соискателя на компанию. """
 
-    def add_rating(self, applicant: User, uname: str, data: Dict) -> bool | NoReturn:
+    request_host = None   # переменная-источник запроса. Имеет значение RequestHost.APIVIEW или RequestHost.VIEW
+
+    def add_rating(self, applicant: User, uname: str, data: Dict) -> DefaultPOSTReturn | NoReturn:
         company = get_object_or_404(User, username=uname)
-        if not self.check_perms(applicant, company):
+        if not AddRatingMixin.check_perms(applicant, company):
             raise PermissionDenied
         instance = Rating(applicant=applicant, company=company)
-        # TEST THIS SHIT
-        data = dict(data | {"applicant": applicant.pk, "rating": int(data["rating"]), "comment": str(data["comment"])})
         v, is_valid, data = self.validate_received_data(data, {}, instance=instance)
 
         if is_valid:
             v.save()
             company = CompanySettings.objects.filter(company=company)
-            company.update(rating=Rating.objects.aggregate(Avg("rating"))["rating__avg"])
-            return True
-        return False
+            rating = Rating.objects.aggregate(Avg("rating"))["rating__avg"]
+            company.update(rating=round(rating, 2))
+            return DefaultPOSTReturn(True)
+        return DefaultPOSTReturn(False, RatingErrors[get_error_field(self.request_host, v)])
 
-    def check_perms(self, applicant: User, company: User) -> bool:
+    @staticmethod
+    def check_perms(applicant: User, company: User) -> bool:
         if not applicant.is_authenticated: return False
         offer = Offer.objects.filter(
             vacancy__in=Vacancy.objects.filter(company=company).all(), applyed=True, applicant=applicant
@@ -231,25 +229,21 @@ class AddRatingMixin(DataValidationMixin):
         return False
 
     def get_data_to_serializer(self, data: Dict, files: Dict) -> Dict:
-        another_data = {
-            "applicant": data["applicant"],
-            "rating": data["rating"],
-            "comment": str(data["comment"])
-        }
-        return data | another_data
+        return data
 
 
 class ApplyOfferMixin(object):
     """ Миксин для принятия оффера от соискателя на вакансию. """
 
     def apply_offer(self, request: Request | HttpRequest, ids: int) -> Literal[None] | NoReturn:
-        offer = self.check_perms(request, ids)
+        offer = ApplyOfferMixin.check_perms(request, ids)
         offer.applyed = offer.vacancy.archived = True
         offer.time_applyed = timezone.now()
         offer.vacancy.save()
         offer.save()
 
-    def check_perms(self, request: Request | HttpRequest, ids: int) -> Offer | NoReturn:
+    @staticmethod
+    def check_perms(request: Request | HttpRequest, ids: int) -> Offer | NoReturn:
         try:
             offer = Offer.objects.select_related("vacancy").get(pk=ids)
         except ObjectDoesNotExist:
@@ -262,11 +256,11 @@ class ApplyOfferMixin(object):
         return offer
 
 
-class DeleteVacancyMixin(CheckPermissionsToSeeVacancyOffersAndDeleteVacancy):
+class DeleteVacancyMixin(object):
     """ Миксин для удаления вакансии. """
 
     def delete_vacancy(self, request: HttpRequest | Request, ids: int) -> Literal[None] | NoReturn:
-        vacancy = self.check_perms(request, ids)
+        vacancy = CheckPermissionsToSeeVacancyOffersAndDeleteVacancy.check_perms(request, ids)
         vacancy.deleted = True
         vacancy.save()
 
@@ -275,11 +269,12 @@ class WithdrawOfferMixin(object):
     """ Миксин для отмены оффера на вакансию со стороны соискателя. """
 
     def withdraw_offer(self, request: HttpRequest | Request, ids: int) -> Literal[None] | NoReturn:
-        offer = WithdrawOfferMixin().check_perms(request, ids)
+        offer = WithdrawOfferMixin.check_perms(request, ids)
         offer.withdrawn = True
         offer.save()
 
-    def check_perms(self, request: HttpRequest | Request, ids: int) -> Offer | NoReturn:
+    @staticmethod
+    def check_perms(request: HttpRequest | Request, ids: int) -> Offer | NoReturn:
         try:
             offer = Offer.objects.select_related("vacancy").get(pk=ids)
         except ObjectDoesNotExist:
@@ -294,9 +289,10 @@ class CompanyApplyedOffersMixin(object):
 
     def get_company_applyed_offers(self, company: User, check_perms: Optional[bool] = True) -> QuerySet:
         if check_perms:
-            self.check_perms(company)
-        return (Offer.objects.select_related("applicant", "vacancy")
-                .filter(vacancy__company=company, applyed=True).order_by("-time_added").all())
+            CompanyApplyedOffersMixin.check_perms(company)
+        return (Offer.objects.select_related("applicant", "vacancy").filter(vacancy__company=company, applyed=True)
+                .order_by("-time_applyed"))
 
-    def check_perms(self, company: User) -> Literal[None] | NoReturn:
+    @staticmethod
+    def check_perms(company: User) -> Literal[None] | NoReturn:
         if not check_is_user_company(company): raise PermissionDenied
