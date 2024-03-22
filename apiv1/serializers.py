@@ -9,7 +9,7 @@ from worksite_app.models import Vacancy, Offer, Rating
 from services.common_utils import get_timezone
 from worksite_app.constants import EXPERIENCE_CHOICES
 from home_app.models import CompanySettings, ApplicantSettings
-from worksite.settings import BASE_DIR
+from worksite.settings import BASE_DIR, MEDIA_ROOT, MEDIA_URL
 
 from datetime import datetime
 from typing import Tuple, Dict, Literal
@@ -151,7 +151,7 @@ class _BaseOfferSerializer(serializers.ModelSerializer):
     @extend_schema_field(OpenApiTypes.STR)
     def get_resume(self, offer):
         if offer.resume:
-            return offer.resume.path.split(str(BASE_DIR))[-1]  # POPRAVIT'!
+            return MEDIA_URL + offer.resume.path.split(str(BASE_DIR))[-1].split(MEDIA_ROOT)[-1]
         return None
 
     @extend_schema_field(OpenApiTypes.STR)
