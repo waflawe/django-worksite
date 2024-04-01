@@ -17,6 +17,8 @@ import pytz
 
 
 def set_datetime_to_timezone(dt: datetime, timezone: str) -> Tuple[datetime | Literal[None], str | Literal[None]]:
+    """ Приведение datetime объекта к временной зоне в общем виде. """
+
     if dt:
         dt = pytz.timezone(timezone).localize(datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second))
         return (dt + dt.utcoffset()), timezone
@@ -24,6 +26,8 @@ def set_datetime_to_timezone(dt: datetime, timezone: str) -> Tuple[datetime | Li
 
 
 def set_time_to_user_timezone(request: Request, time: datetime, attribute_name: str = "time_added") -> Dict:
+    """ Приведение datetime объекта к временной зоне, установленной в настройках текущего пользователя. """
+
     user_timezone = get_timezone(request)
     if user_timezone:
         time, timezone = set_datetime_to_timezone(time, user_timezone)
@@ -60,15 +64,10 @@ class ApplicantSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicantSettings
         fields = "timezone", "applicant_avatar"
-        extra_kwargs = {}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.Meta.fields:
-            self.Meta.extra_kwargs[field] = {'required': False}
+        extra_kwargs = {"timezone": {"required": False}, "applicant_avatar": {"required": False}}
 
 
-class ChoiceField(serializers.ChoiceField):
+class ExperienceChoiceField(serializers.ChoiceField):
     def to_representation(self, value):
         return EXPERIENCE_CHOICES[int(value)][1]
 
@@ -76,7 +75,7 @@ class ChoiceField(serializers.ChoiceField):
 class VacancysSerializer(serializers.ModelSerializer):
     company = serializers.SerializerMethodField()
     time_added = serializers.SerializerMethodField()
-    experience = ChoiceField(choices=EXPERIENCE_CHOICES)
+    experience = ExperienceChoiceField(choices=EXPERIENCE_CHOICES)
 
     class Meta:
         model = Vacancy
@@ -100,17 +99,15 @@ class VacancysSerializer(serializers.ModelSerializer):
 
 class VacancyDetailSerializer(VacancysSerializer):
     class Meta:
-        model = Vacancy
-        fields = (
-            "pk", "company", "name", "description", "money",
-            "experience", "city", "skills", "time_added", "archived"
-        )
+        immutable_fields = "name", "description", "money", "experience", "city", "skills"
         read_only_fields = "pk", "company", "time_added", "archived"
+        model = Vacancy
+        fields = *read_only_fields, *immutable_fields
         extra_kwargs = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in ("name", "description", "money", "experience", "city", "skills"):
+        for field in self.Meta.immutable_fields:
             self.Meta.extra_kwargs[field] = {"required": True}
 
 
@@ -164,11 +161,8 @@ class OffersFullSerializer(_BaseOfferSerializer):
 
     class Meta:
         model = Offer
-        fields = (
-            "id", "vacancy", "applicant", "resume", "resume_text",
-            "time_added", "time_applyed", "applyed", "withdrawn"
-        )
         read_only_fields = "id", "time_added", "time_applyed", "applyed", "withdrawn"
+        fields = *read_only_fields, "vacancy", "applicant", "resume", "resume_text"
 
     @extend_schema_field(serializers.DictField)
     def get_time_applyed(self, offer):
@@ -180,18 +174,15 @@ class CompanyApplyedOffersSerializer(OffersFullSerializer):
 
     class Meta:
         model = Offer
-        fields = (
-            "id", "vacancy", "applicant", "resume", "resume_text",
-            "time_added", "time_applyed"
-        )
         read_only_fields = "id", "time_added", "time_applyed"
+        fields = *read_only_fields, "vacancy", "applicant", "resume", "resume_text"
 
 
 class VacancyOffersSerializer(_BaseOfferSerializer):
     class Meta:
         model = Offer
-        fields = "id", "applicant", "resume", "resume_text", "time_added"
         read_only_fields = "id", "time_added"
+        fields = *read_only_fields, "applicant", "resume", "resume_text"
 
 
 class RatingsSerializer(serializers.ModelSerializer):

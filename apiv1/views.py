@@ -23,7 +23,7 @@ from services.worksite_app_mixins import (
 from services.home_app_mixins import UpdateSettingsMixin
 from worksite_app.models import Vacancy, Offer, Rating
 from services.common_utils import RequestHost
-from apiv1.permissions import IsApplicant, IsCompany, IsAuthenticatedAndIsCompanyOrReadOnly
+from apiv1.permissions import IsApplicant, IsCompany, IsAuthenticatedCompanyOrReadOnly
 
 from typing import NamedTuple, Optional
 
@@ -54,7 +54,7 @@ class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModel
     serializer_class = VacancysSerializer
     serializer_detail_class = validation_class = VacancyDetailSerializer
     lookup_url_kwarg = "ids"
-    permission_classes = (IsAuthenticatedAndIsCompanyOrReadOnly,)
+    permission_classes = (IsAuthenticatedCompanyOrReadOnly,)
 
     def get_queryset(self):
         company = self.request.query_params.get("company", None)

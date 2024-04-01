@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect, reverse
 from django.http import HttpRequest, HttpResponse, Http404
 from django.views.generic import View
-from django.contrib.auth import logout
-from django.urls import reverse_lazy
+from django.contrib.auth import logout, authenticate, login
+from django.urls import reverse_lazy, NoReverseMatch
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from services.home_app_utils import AuthViewUtils, RegisterViewUtils, SettingsViewUtils
+from services.home_app_utils import RegisterViewUtils, SettingsViewUtils
 from services.common_utils import check_is_user_auth, check_is_user_company
 from home_app.forms import AuthForm, ApplicantRegisterForm, CompanyRegisterForm
 
@@ -22,9 +22,7 @@ def get_register_page(request: HttpRequest) -> bool:
 
 
 def home_view(request: HttpRequest) -> HttpResponse:
-    context = {
-        "show_logout": bool(request.GET.get("show_logout", False)),
-    }
+    context = {"show_logout": bool(request.GET.get("show_logout", False))}
     return render(request, "home_app/home.html", context=context)
 
 
@@ -41,7 +39,22 @@ class AuthView(View):
 
     def post(self, request: HttpRequest) -> HttpResponse:
         if check_is_user_auth(request): return redirect("/")
-        return AuthViewUtils.auth_view_utils(self, request)
+
+        form = AuthForm(request.POST)
+
+        if form.is_valid():
+            user = authenticate(username=request.POST["username"], password=request.POST["password"])
+            if user is not None:
+                login(request, user)
+                return self._get_redirect(request)
+
+        return self.get(request=request, flag_error=True, form=request.POST)
+
+    def _get_redirect(self, request: HttpRequest) -> HttpResponse:
+        try:
+            return redirect(request.GET["next"] if request.GET.get("next", False) else "/")
+        except NoReverseMatch:
+            return redirect("/")
 
 
 class LogoutView(LoginRequiredMixin, View):
@@ -72,10 +85,8 @@ class RegisterView(View):
 class SettingsView(LoginRequiredMixin, View):
     login_url = reverse_lazy("home_app:auth")
 
-    def get(self,
-            request: HttpRequest,
-            flag_success: Optional[bool] = False,
-            flag_error: Optional[bool] = False) -> HttpResponse:
+    def get(self, request: HttpRequest, flag_success: Optional[bool] = False, flag_error: Optional[bool] = False) \
+            -> HttpResponse:
         return render(request, "home_app/settings.html", context=SettingsViewUtils.settings_view_get_utils(
             request,
             flag_success,

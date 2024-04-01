@@ -1,8 +1,7 @@
-from enum import StrEnum
-from error_messages.errors_meta import ErrorsMeta
+from error_messages.errors import BaseErrorsEnum
 
 
-class SettingsErrors(StrEnum, metaclass=ErrorsMeta):
+class SettingsErrors(BaseErrorsEnum):
     INVALID_TIMEZONE = "Неверная временная зона."
     INVALID_APPLICANT_AVATAR = "Неверная аватарка."
     INVALID_COMPANY_LOGO = "Неверный логотип компании."

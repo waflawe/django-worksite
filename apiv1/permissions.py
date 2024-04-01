@@ -17,7 +17,7 @@ class IsCompany(BasePermission):
         return request.user.first_name != ""
 
 
-class IsAuthenticatedAndIsCompanyOrReadOnly(BasePermission):
+class IsAuthenticatedCompanyOrReadOnly(BasePermission):
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return True

@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from django.contrib.auth import authenticate, login
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
-from django.urls import NoReverseMatch, reverse
+from django.urls import reverse
 
-from home_app.forms import (
-    AuthForm, ApplicantRegisterForm, CompanyRegisterForm, ApplicantSettingsForm, CompanySettingsForm
-)
+from home_app.forms import ApplicantRegisterForm, CompanyRegisterForm, ApplicantSettingsForm, CompanySettingsForm
 from services.common_utils import check_is_user_company, RequestHost
 from services.home_app_mixins import UpdateSettingsMixin
 from home_app.models import CompanySettings, ApplicantSettings
@@ -16,27 +13,6 @@ import pytz
 from typing import Literal
 
 Context = dict
-
-
-class AuthViewUtils(object):
-    @staticmethod
-    def auth_view_utils(view_self, request: HttpRequest) -> HttpResponse:
-        form = AuthForm(request.POST)
-
-        if form.is_valid():
-            user = authenticate(username=request.POST["username"], password=request.POST["password"])
-            if user is not None:
-                login(request, user)
-                return AuthViewUtils._get_redirect(request)
-
-        return view_self.get(request=request, flag_error=True, form=request.POST)
-
-    @staticmethod
-    def _get_redirect(request: HttpRequest) -> HttpResponse:
-        try:
-            return redirect(request.GET["next"] if request.GET.get("next", False) else "/")
-        except NoReverseMatch:
-            return redirect("/")
 
 
 class RegisterViewUtils:

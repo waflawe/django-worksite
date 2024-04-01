@@ -2,7 +2,7 @@ from django.http import HttpRequest
 from rest_framework.request import Request
 from django.contrib.auth.models import User
 
-from error_messages.errors_meta import E
+from error_messages.errors import E
 from home_app.models import CompanySettings, ApplicantSettings
 
 from typing import Literal, Any, NamedTuple, Optional
@@ -11,7 +11,7 @@ from typing import Literal, Any, NamedTuple, Optional
 class RequestHost(object):
     """ Класс для обозначения источника запроса (вьюшка или апи-вьюшка). """
 
-    APIVIEW = "API"
+    APIVIEW = "APIVIEW"
     VIEW = "VIEW"
 
 

@@ -87,7 +87,7 @@ class UploadPhotoFormMixin(forms.ModelForm):
 class ApplicantSettingsForm(UploadPhotoFormMixin):
     class Meta:
         model = ApplicantSettings
-        fields = ("applicant_avatar",)
+        fields = "applicant_avatar",
 
     def __init__(self, *args, **kwargs):
         super().__init__("applicant_avatar", *args, **kwargs)
@@ -109,7 +109,7 @@ class CompanySettingsForm(UploadPhotoFormMixin):
 
     class Meta:
         model = CompanySettings
-        fields = ("company_logo", "company_description", "company_site")
+        fields = "company_logo", "company_description", "company_site"
 
     def __init__(self, *args, **kwargs):
         super().__init__("company_logo", *args, **kwargs)
