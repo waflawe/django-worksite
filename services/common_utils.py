@@ -1,11 +1,14 @@
 from django.http import HttpRequest
-from rest_framework.request import Request
 from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.conf import settings
 
 from error_messages.errors import E
 from home_app.models import CompanySettings, ApplicantSettings
 
 from typing import Literal, Any, NamedTuple, Optional
+
+UserSettings = CompanySettings | ApplicantSettings
 
 
 class RequestHost(object):
@@ -26,14 +29,27 @@ def check_is_user_company(user: User) -> bool:
         return False
 
 
-def get_timezone(request: HttpRequest | Request) -> Literal[False] | str:
+def get_user_settings(user: User | UserSettings) -> Literal[False] | UserSettings:
+    if not user.is_authenticated:
+        return False
+    if isinstance(user, (ApplicantSettings, CompanySettings)):
+        return user
+    cache_settings_name = f"{user.pk}{settings.CACHE_NAMES_DELIMITER}{settings.USER_SETTINGS_CACHE_NAME}"
+    user_settings = cache.get(cache_settings_name)
+    if not user_settings:
+        if check_is_user_company(user):
+            user_settings = CompanySettings.objects.select_related("company").get(company=user)
+        else:
+            user_settings = ApplicantSettings.objects.select_related("applicant").get(applicant=user)
+        cache.set(cache_settings_name, user_settings, 60*60*24*7)
+    return user_settings
+
+
+def get_timezone(user: User | UserSettings) -> Literal[False] | str:
     """ Возвращает выбранную в настройках временную зону пользователя. """
 
-    if check_is_user_auth(request):
-        if check_is_user_company(request.user):
-            return CompanySettings.objects.get(company=request.user).timezone
-        else:
-            return ApplicantSettings.objects.get(applicant=request.user).timezone
+    if user.is_authenticated:
+        return get_user_settings(user).timezone
     return False
 
 

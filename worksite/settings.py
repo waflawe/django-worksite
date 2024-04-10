@@ -118,6 +118,33 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": CELERY_BROKER_URL,
+        "TIMEOUT": 60*30
+    }
+}
+
+USER_SETTINGS_CACHE_NAME = "settings"
+COMPANY_RATINGS_CACHE_NAME = "ratings"
+CACHE_NAMES_DELIMITER = ":"
+
+LOGGING = {
+    "version": 1,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler"
+        }
+    },
+    "loggers": {
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": env("DJANGO_LOG_LEVEL", default="DEBUG")
+        }
+    }
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

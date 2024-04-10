@@ -3,9 +3,11 @@ from __future__ import annotations
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.conf import settings
+from django.core.cache import cache
 
 from home_app.forms import ApplicantRegisterForm, CompanyRegisterForm, ApplicantSettingsForm, CompanySettingsForm
-from services.common_utils import check_is_user_company, RequestHost
+from services.common_utils import check_is_user_company, RequestHost, get_user_settings
 from services.home_app_mixins import UpdateSettingsMixin
 from home_app.models import CompanySettings, ApplicantSettings
 
@@ -36,7 +38,7 @@ class SettingsViewUtils(UpdateSettingsMixin):
         context = {}
 
         context["tzs"], company = pytz.common_timezones, check_is_user_company(request.user)
-        cs = CompanySettings.objects.get(company=request.user) if company else False
+        cs = get_user_settings(request.user) if company else False
         context["now"] = cs.timezone if company else ApplicantSettings.objects.get(applicant=request.user).timezone
         context["flag_error"], context["flag_success"] = flag_error, flag_success
         context["form"] = ApplicantSettingsForm() if not company else CompanySettingsForm(
@@ -52,6 +54,7 @@ class SettingsViewUtils(UpdateSettingsMixin):
     def _get_response(self, view_self, request: HttpRequest, flag_error: Literal[False] | str,
                       flag_success: bool, company: bool) -> HttpResponse:
         if company and flag_success:
+            cache.delete(f"{request.user.id}{settings.CACHE_NAMES_DELIMITER}{settings.USER_SETTINGS_CACHE_NAME}")
             return redirect(f"{reverse('worksite_app:some_company', kwargs={'uname': request.user.username})}"
                             f"?show_success=True")
         else:

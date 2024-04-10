@@ -18,11 +18,11 @@ from apiv1.serializers import (
 from services.worksite_app_mixins import (
     DefaultPOSTReturn, VacancyFilterMixin, VacancySearchMixin, DeleteVacancyMixin, AddVacancyMixin,
     CheckPermissionsToSeeVacancy, CheckPermissionsToSeeVacancyOffersAndDeleteVacancy, WithdrawOfferMixin, AddOfferMixin,
-    AddRatingMixin, ApplyOfferMixin, CompanyApplyedOffersMixin
+    AddRatingMixin, ApplyOfferMixin, CompanyApplyedOffersMixin, get_company_ratings
 )
 from services.home_app_mixins import UpdateSettingsMixin
-from worksite_app.models import Vacancy, Offer, Rating
-from services.common_utils import RequestHost
+from worksite_app.models import Vacancy, Offer
+from services.common_utils import RequestHost, check_is_user_company
 from apiv1.permissions import IsApplicant, IsCompany, IsAuthenticatedCompanyOrReadOnly
 
 from typing import NamedTuple, Optional
@@ -61,7 +61,9 @@ class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModel
         company = get_object_or_404(User, username=company) if company else None
         filter_kwargs = self.filter(self.request.query_params, company, (not self.request.user == company))
         search_query = self.search(self.request.query_params)
-        return Vacancy.objects.filter(**filter_kwargs).filter(search_query)
+        queryset = Vacancy.objects.filter(**filter_kwargs).filter(search_query)
+        queryset = self.get_serializer_class().setup_eager_loading(queryset)
+        return queryset
 
     @extend_schema(responses={
         status.HTTP_200_OK: serializer_detail_class,
@@ -140,7 +142,8 @@ class ApplicantOffersViewSet(GenericViewSet, mixins.ListModelMixin, mixins.Creat
         """ Получение оффера соискателя. """
 
         offer = get_object_or_404(Offer, pk=self.kwargs[self.lookup_url_kwarg])
-        return Response(self.get_serializer_class()(instance=offer).data, status=status.HTTP_200_OK)
+        return Response(self.get_serializer_class()(instance=offer, context={"request": request}).data,
+                        status=status.HTTP_200_OK)
 
 
 class UpdateSettingsAPIView(APIView, UpdateSettingsMixin):
@@ -162,6 +165,11 @@ class UpdateSettingsAPIView(APIView, UpdateSettingsMixin):
         return POSTView.get_response(flag)
 
 
+@extend_schema_view(get=extend_schema(responses={
+    status.HTTP_200_OK: RatingsSerializer,
+    status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
+    status.HTTP_400_BAD_REQUEST: CustomErrorSerializer
+}))
 class GetCompanyRatingsAPIView(ListAPIView):
     """ Получение отзывов на конкретную компанию по ее username. """
 
@@ -169,7 +177,13 @@ class GetCompanyRatingsAPIView(ListAPIView):
     lookup_url_kwarg = "uname"
 
     def get_queryset(self):
-        return Rating.objects.filter(company__username=self.kwargs[self.lookup_url_kwarg])
+        company = get_object_or_404(User, username=self.kwargs[self.lookup_url_kwarg])
+        if not check_is_user_company(company):
+            return Response(CustomErrorSerializer(data={
+                "detail": "Неверный username компании.",
+                "code": "INVALID_USERNAME"
+            }).data, status=status.HTTP_400_BAD_REQUEST)
+        return get_company_ratings(company).prefetch_related("applicant")
 
 
 class GetCompanyDetailAPIView(APIView):

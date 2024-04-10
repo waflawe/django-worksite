@@ -9,17 +9,29 @@ from django.db import IntegrityError, models
 from django import forms
 from rest_framework import serializers
 from rest_framework.request import Request
+from django.conf import settings
+from django.core.cache import cache
 
 from worksite_app.constants import FILTERED_CITIES, EXPERIENCE_CHOICES_VALID_VALUES
 from worksite_app.models import Vacancy, Offer, Rating
-from home_app.models import CompanySettings
-from services.common_utils import check_is_user_company, RequestHost, get_error_field, DefaultPOSTReturn
+from services.common_utils import (
+    check_is_user_company, RequestHost, get_error_field, DefaultPOSTReturn, get_user_settings
+)
 from error_messages.worksite_error_messages import VacancyErrors, OfferErrors, RatingErrors
 
 from typing import Optional, Dict, Literal, Union, NoReturn, Tuple, Any, Type
 
 Instance = models.Model
 ValidationClass = Union[Type[serializers.ModelSerializer] | Type[forms.ModelForm]]
+
+
+def get_company_ratings(company: User) -> QuerySet:
+    cache_ratings_name = f"{company.pk}{settings.CACHE_NAMES_DELIMITER}{settings.COMPANY_RATINGS_CACHE_NAME}"
+    queryset = cache.get(cache_ratings_name)
+    if not queryset:
+        queryset = Rating.objects.filter(company=company).select_related("applicant")
+        cache.set(cache_ratings_name, queryset, 60 * 60 * 24)
+    return queryset
 
 
 class CheckPermissionsToSeeVacancy(object):
@@ -210,15 +222,17 @@ class AddRatingMixin(DataValidationMixin):
 
         if is_valid:
             v.save()
-            company = CompanySettings.objects.filter(company=company)
+            company_s = get_user_settings(company)
             rating = Rating.objects.aggregate(Avg("rating"))["rating__avg"]
-            company.update(rating=round(rating, 2))
-            return DefaultPOSTReturn(True)
+            company_s.rating = round(rating, 2)
+            company_s.save()
+            cache.delete(f"{company.pk}{settings.CACHE_NAMES_DELIMITER}{settings.USER_SETTINGS_CACHE_NAME}")
+            return DefaultPOSTReturn(company)
         return DefaultPOSTReturn(False, RatingErrors[get_error_field(self.request_host, v)])
 
     @staticmethod
     def check_perms(applicant: User, company: User) -> bool:
-        if not applicant.is_authenticated: return False
+        if (not applicant.is_authenticated) or check_is_user_company(applicant): return False
         offer = Offer.objects.filter(
             vacancy__in=Vacancy.objects.filter(company=company).all(), applyed=True, applicant=applicant
         ).exists()

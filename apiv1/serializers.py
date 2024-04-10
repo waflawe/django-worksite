@@ -1,19 +1,19 @@
 from rest_framework import serializers
-from rest_framework.request import Request
 from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
+from django.conf import settings
 
 from worksite_app.models import Vacancy, Offer, Rating
-from services.common_utils import get_timezone
+from services.common_utils import get_timezone, get_user_settings
 from worksite_app.constants import EXPERIENCE_CHOICES
 from home_app.models import CompanySettings, ApplicantSettings
-from worksite.settings import BASE_DIR, MEDIA_ROOT, MEDIA_URL
 
 from datetime import datetime
 from typing import Tuple, Dict, Literal
 import pytz
+
+UserSettings = ApplicantSettings | CompanySettings
 
 
 def set_datetime_to_timezone(dt: datetime, timezone: str) -> Tuple[datetime | Literal[None], str | Literal[None]]:
@@ -25,10 +25,10 @@ def set_datetime_to_timezone(dt: datetime, timezone: str) -> Tuple[datetime | Li
     return None, None
 
 
-def set_time_to_user_timezone(request: Request, time: datetime, attribute_name: str = "time_added") -> Dict:
+def set_time_to_user_timezone(user: User | UserSettings, time: datetime, attribute_name: str = "time_added") -> Dict:
     """ Приведение datetime объекта к временной зоне, установленной в настройках текущего пользователя. """
 
-    user_timezone = get_timezone(request)
+    user_timezone = get_timezone(user)
     if user_timezone:
         time, timezone = set_datetime_to_timezone(time, user_timezone)
         return {attribute_name: time.strftime("%H:%M %d/%m/%Y") if time else None, "timezone": timezone}
@@ -72,8 +72,39 @@ class ExperienceChoiceField(serializers.ChoiceField):
         return EXPERIENCE_CHOICES[int(value)][1]
 
 
+class CompanySerializer(serializers.ModelSerializer):
+    company_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = "username", "company_name"
+
+    def get_company_name(self, company):
+        return company.first_name
+
+
+class CompanyDetailSerializer(CompanySerializer):
+    company_info = serializers.SerializerMethodField()
+    date_joined = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = "username", "company_name", "date_joined", "company_info"
+
+    @extend_schema_field(serializers.DictField)
+    def get_company_info(self, company):
+        settings_ = get_user_settings(company)
+        data = CompanySettingsSerializer(instance=settings_, context={"view_rating": True})
+        vacancys_count = Vacancy.objects.filter(company=company, archived=False, deleted=False).count()
+        return data.data | {"vacancys_count": vacancys_count}
+
+    @extend_schema_field(serializers.DictField)
+    def get_date_joined(self, company):
+        return set_time_to_user_timezone(self.context["request"].user, company.date_joined, "date_joined")
+
+
 class VacancysSerializer(serializers.ModelSerializer):
-    company = serializers.SerializerMethodField()
+    company = CompanySerializer(read_only=True)
     time_added = serializers.SerializerMethodField()
     experience = ExperienceChoiceField(choices=EXPERIENCE_CHOICES)
 
@@ -84,13 +115,14 @@ class VacancysSerializer(serializers.ModelSerializer):
             "city", "time_added", "archived"
         )
 
-    @extend_schema_field(serializers.DictField)
-    def get_company(self, vacancy):
-        return {"company_username": vacancy.company.username, "company_name": vacancy.company.first_name}
+    @classmethod
+    def setup_eager_loading(cls, queryset):
+        queryset = queryset.prefetch_related("company")
+        return queryset
 
     @extend_schema_field(serializers.DictField)
     def get_time_added(self, vacancy):
-        return set_time_to_user_timezone(self.context["request"], vacancy.time_added)
+        return set_time_to_user_timezone(self.context["request"].user, vacancy.time_added)
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_experience_data(self, vacancy):
@@ -111,31 +143,6 @@ class VacancyDetailSerializer(VacancysSerializer):
             self.Meta.extra_kwargs[field] = {"required": True}
 
 
-class CompanyDetailSerializer(serializers.ModelSerializer):
-    company_name = serializers.SerializerMethodField()
-    company_info = serializers.SerializerMethodField()
-    date_joined = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = "username", "company_name", "date_joined", "company_info"
-
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_company_name(self, company):
-        return company.first_name
-
-    @extend_schema_field(serializers.DictField)
-    def get_company_info(self, company):
-        settings = get_object_or_404(CompanySettings, company=company)
-        data = CompanySettingsSerializer(instance=settings, context={"view_rating": True})
-        vacancys_count = Vacancy.objects.filter(company=company, archived=False, deleted=False).count()
-        return data.data | {"vacancys_count": vacancys_count}
-
-    @extend_schema_field(serializers.DictField)
-    def get_date_joined(self, company):
-        return set_time_to_user_timezone(self.context["request"], company.date_joined, "date_joined")
-
-
 class _BaseOfferSerializer(serializers.ModelSerializer):
     time_added = serializers.SerializerMethodField()
     resume = serializers.SerializerMethodField()
@@ -143,13 +150,12 @@ class _BaseOfferSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.DictField)
     def get_time_added(self, offer):
-        return set_time_to_user_timezone(self.context["request"], offer.time_added)
+        return set_time_to_user_timezone(self.context["request"].user, offer.time_added)
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_resume(self, offer):
-        if offer.resume:
-            return MEDIA_URL + offer.resume.path.split(str(BASE_DIR))[-1].split(MEDIA_ROOT)[-1]
-        return None
+        return settings.MEDIA_URL + offer.resume.path.split(str(settings.BASE_DIR))[-1].split(settings.MEDIA_ROOT)[-1] \
+            if offer.resume else None
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_applicant(self, offer):
@@ -166,7 +172,11 @@ class OffersFullSerializer(_BaseOfferSerializer):
 
     @extend_schema_field(serializers.DictField)
     def get_time_applyed(self, offer):
-        return set_time_to_user_timezone(self.context["request"], offer.time_applyed, "time_applyed")
+        return set_time_to_user_timezone(self.context["request"].user, offer.time_applyed, "time_applyed")
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_applicant(self, offer):
+        return self.context["request"].user.username
 
 
 class CompanyApplyedOffersSerializer(OffersFullSerializer):
@@ -195,7 +205,7 @@ class RatingsSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.DictField)
     def get_time_added(self, rating):
-        return set_time_to_user_timezone(self.context["request"], rating.time_added)
+        return set_time_to_user_timezone(self.context["request"].user, rating.time_added)
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_applicant(self, rating):

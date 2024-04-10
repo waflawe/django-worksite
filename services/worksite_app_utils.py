@@ -7,18 +7,19 @@ from django.db.models.fields.files import ImageFieldFile
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
+from django.conf import settings
+from django.core.cache import cache
 
 from worksite_app.forms import AddVacancyForm, AddRatingForm, AddOfferForm
 from worksite_app.models import Vacancy, Offer, Rating
 from home_app.models import CompanySettings, ApplicantSettings
-from worksite.settings import (
-    BASE_DIR, MEDIA_ROOT, DEFAULT_COMPANY_LOGO_FILENAME, DEFAULT_APPLICANT_AVATAR_FILENAME, CUSTOM_COMPANY_LOGOS_DIR
+from services.common_utils import (
+    get_timezone, get_path_to_crop_photo, check_is_user_company, RequestHost, get_user_settings
 )
-from services.common_utils import get_timezone, get_path_to_crop_photo, check_is_user_company, RequestHost
 from services.worksite_app_mixins import (
     VacancyFilterMixin, VacancySearchMixin, AddVacancyMixin, AddOfferMixin, AddRatingMixin,
     CheckPermissionsToSeeVacancy, CheckPermissionsToSeeVacancyOffersAndDeleteVacancy, WithdrawOfferMixin,
-    CompanyApplyedOffersMixin, DeleteVacancyMixin, ApplyOfferMixin
+    CompanyApplyedOffersMixin, DeleteVacancyMixin, ApplyOfferMixin, get_company_ratings
 )
 from worksite_app.constants import FILTERED_CITIES, EXPERIENCE_CHOICES
 
@@ -29,16 +30,18 @@ from random import randrange
 Context = dict
 num = 100000
 
+UserSettings = ApplicantSettings | CompanySettings
+
 
 class CompanyData(NamedTuple):
     """ Структура данных для отображения информации о компании в шаблоне. """
 
-    company_rating: int | float
-    company_logo_path: str | Literal[False]
-    company_logo_w: int | Literal[False]
-    company_logo_h: int | Literal[False]
-    company_reviews_count: int
-    company_star_classes_list: List[str]
+    company_rating: Optional[int | float] = None
+    company_logo_path: Optional[str | Literal[False]] = None
+    company_logo_w: Optional[int | Literal[False]] = None
+    company_logo_h: Optional[int | Literal[False]] = None
+    company_reviews_count: Optional[int] = None
+    company_star_classes_list: Optional[List[str]] = None
 
 
 class VacancyRenderObject(NamedTuple):
@@ -105,8 +108,9 @@ def _get_offset(request: HttpRequest, objects: QuerySet[Vacancy | Rating]) -> in
     return offset
 
 
-def _check_is_company_logo_default(settings: CompanySettings) -> str:
-    return str(settings.company_logo) if str(settings.company_logo) == DEFAULT_COMPANY_LOGO_FILENAME else False
+def _check_is_company_logo_default(user_settings: CompanySettings) -> str:
+    return str(user_settings.company_logo) \
+        if str(user_settings.company_logo) == settings.DEFAULT_COMPANY_LOGO_FILENAME else False
 
 
 def _get_validated_width_and_height(image: ImageFieldFile, size: int) -> \
@@ -119,16 +123,16 @@ def _get_validated_width_and_height(image: ImageFieldFile, size: int) -> \
     return (size * res, size) if huges[0] == h else (size, size * res)
 
 
-def _get_logo_path_and_params(settings: CompanySettings, size: int) -> \
+def _get_logo_path_and_params(user_settings: CompanySettings, size: int, company: User) -> \
         Tuple[str, int | float, int | float]:
     """ Функция для получения правильного пути до логотипа компании и его длины и ширины для рендеринга в шаблон. """
 
-    flag = _check_is_company_logo_default(settings)
+    flag = _check_is_company_logo_default(user_settings)
     if flag:
         return flag, size, size
-    w, h = _get_validated_width_and_height(settings.company_logo, size)
-    path_to_company_custom_logo_dir = f"{CUSTOM_COMPANY_LOGOS_DIR}/{settings.company.pk}/"
-    filename = os.listdir(BASE_DIR / MEDIA_ROOT / path_to_company_custom_logo_dir)[0]
+    w, h = _get_validated_width_and_height(user_settings.company_logo, size)
+    path_to_company_custom_logo_dir = f"{settings.CUSTOM_COMPANY_LOGOS_DIR}/{company.pk}/"
+    filename = os.listdir(settings.BASE_DIR / settings.MEDIA_ROOT / path_to_company_custom_logo_dir)[0]
     return f"{path_to_company_custom_logo_dir}{filename}", w, h
 
 
@@ -167,18 +171,20 @@ def _get_star_classes_list(rating: float) -> List[str]:
     return classes
 
 
-def _get_company_data(company: User, size: int) -> CompanyData:
+def _get_company_data(company: User, size: int, fields: Optional[Tuple] = None) -> CompanyData:
     """
     Функция для получения различной информации о компании для рендеринга.
     (рейтинг компании, информация о логотипе и CSS классах звезд рейтинга)
     """
 
-    company_s = CompanySettings.objects.get(company=company)
+    company_s = get_user_settings(company)
+    if not fields:
+        fields = ("rating", "logo", "ratings_count", "classes_list")
     return CompanyData(
-        company_s.rating,
-        *_get_logo_path_and_params(company_s, size),
-        Rating.objects.filter(company=company).count(),
-        _get_star_classes_list(company_s.rating)
+        company_s.rating if "rating" in fields else None,
+        *_get_logo_path_and_params(company_s, size, company) if "logo" in fields else None,
+        get_company_ratings(company).count() if "ratings_count" in fields else None,
+        _get_star_classes_list(company_s.rating) if "classes_list" in fields else None
     )
 
 
@@ -186,15 +192,15 @@ def _get_queryset(request: HttpRequest, queryset: QuerySet[Vacancy | Rating], qu
         ObjectsAndOffsets:
     """ Функция для преобразования QuerySet'a к готовому для рендеринга виду. """
 
+    queryset = queryset_hadler(queryset)
     offset = _get_offset(request, queryset)
     offset_next = OffsetButton(offset+20, len(queryset[offset + 20:]) > 0)
     offset_back = OffsetButton(offset-20, len(queryset[:offset]) > 0)
-    queryset = queryset_hadler(queryset)
     return ObjectsAndOffsets(queryset, offset, offset_next, offset_back)
 
 
-def vacancys_queryset_handler(vacancys): return tuple(
-    VacancyRenderObject(v, _get_experience(v), company_data=_get_company_data(v.company, 200))
+def vacancys_queryset_handler(vacancys: QuerySet): return tuple(
+    VacancyRenderObject(v, _get_experience(v), company_data=_get_company_data(v.company, 200, ("logo",)))
     for v in vacancys
 )
 
@@ -202,8 +208,8 @@ def vacancys_queryset_handler(vacancys): return tuple(
 def _get_path_to_applicant_avatar(applicant: User) -> str:
     """ Функция для получения пути к аватару соискателя. """
 
-    avatar = ApplicantSettings.objects.get(applicant=applicant).applicant_avatar
-    if str(avatar) == DEFAULT_APPLICANT_AVATAR_FILENAME:
+    avatar = get_user_settings(applicant).applicant_avatar
+    if str(avatar) == settings.DEFAULT_APPLICANT_AVATAR_FILENAME:
         return str(avatar)
     return get_path_to_crop_photo(str(avatar))
 
@@ -223,9 +229,9 @@ def _get_context(request: HttpRequest, **kwargs) -> Context:
         context["offset_params"]["offset_back"] = queryset_data.offset_back
         context[alias] = context[alias][queryset_data.offset:queryset_data.offset_next]
     context["any_random_integer"] = randrange(num) if kwargs.get("any_random_integer", None) else None
-    context["company_data"] = CompanyData(*_get_company_data(company, kwargs["size"])) if company else None
+    context["company_data"] = _get_company_data(company, kwargs["size"]) if company else None
     context["show_success"] = request.GET.get("show_success", None)
-    context["tzone"] = get_timezone(request) if kwargs.get("tzone", None) else None
+    context["tzone"] = get_timezone(request.user) if kwargs.get("tzone", None) else None
     context["offset_params"]["city"] = request.GET.get("city", None)
     return context
 
@@ -234,7 +240,7 @@ class HomeViewUtils(VacancyFilterMixin, VacancySearchMixin):
     def home_utils(self, request: HttpRequest) -> Context:
         filter_kwargs = self.filter(request.GET)
         search_query = self.search(request.GET)
-        queryset = Vacancy.objects.filter(**filter_kwargs).filter(search_query)
+        queryset = Vacancy.objects.select_related("company").filter(**filter_kwargs).filter(search_query)
         context = _get_context(request, queryset=queryset, queryset_handler=vacancys_queryset_handler,
                                any_random_integer=True, queryset_context_alias="vacancys")
         return context | {"show_button": check_is_user_company(request.user)}
@@ -284,7 +290,7 @@ class SomeCompanyViewUtils(AddRatingMixin):
         if not company.first_name != "":
             raise Http404
         context = _get_context(request, company=company, size=200, any_random_integer=True, show_success=True)
-        company_s = CompanySettings.objects.get(company=company)
+        company_s = get_user_settings(request.user)
         company_data = {
             "company_description": company_s.company_description,
             "company_site": company_s.company_site,
@@ -300,6 +306,7 @@ class SomeCompanyViewUtils(AddRatingMixin):
     def some_company_post_utils(self, view_self, request: HttpRequest, uname: str) -> HttpResponse:
         flag = self.add_rating(request.user, uname, request.POST)
         if flag.status:
+            cache.delete(f"{flag.status.pk}{settings.CACHE_NAMES_DELIMITER}{settings.COMPANY_RATINGS_CACHE_NAME}")
             return redirect(f"{reverse('worksite_app:company_rating', kwargs={'uname': uname})}"
                             f"?show_success=True")
         return view_self.get(request, uname, error=flag.error.message)
@@ -310,11 +317,11 @@ class CompanyRatingViewUtils(object):
     def company_rating_utils(request: HttpRequest, uname: str) -> Context:
         def queryset_handler(ratings: QuerySet) -> Tuple[RatingRenderObject, ...]: return tuple(
             RatingRenderObject(rating, _get_path_to_applicant_avatar(rating.applicant),
-                               _get_star_classes_list(rating.rating)) for rating in ratings
+                               _get_star_classes_list(rating.rating))for rating in ratings
         )
 
         company = get_object_or_404(User, username=uname)
-        queryset = Rating.objects.filter(company=company).select_related("applicant")
+        queryset = get_company_ratings(company)
         context = _get_context(request, queryset=queryset, queryset_handler=queryset_handler,
                                queryset_context_alias="ratings", any_random_integer=True, tzone=True)
         return context | {"company_username": company.username}
@@ -325,7 +332,7 @@ class CompanyVacancysViewUtils(VacancyFilterMixin, VacancySearchMixin):
         company = get_object_or_404(User, username=uname)
         filter_kwargs = self.filter(request.GET, company, (not request.user == company))
         search_query = self.search(request.GET)
-        queryset = Vacancy.objects.filter(**filter_kwargs).filter(search_query)
+        queryset = Vacancy.objects.select_related("company").filter(**filter_kwargs).filter(search_query)
         context = _get_context(request, queryset=queryset, queryset_handler=vacancys_queryset_handler,
                                queryset_context_alias="vacancys", any_random_integer=True)
         return context | {"company": uname, "show_archived": request.user == company}
@@ -354,7 +361,7 @@ class ApplyOfferViewUtils(ApplyOfferMixin):
 class MyOffersViewUtils:
     @staticmethod
     def my_offers_utils(request: HttpRequest) -> Context:
-        if (not request.user.is_authenticated) or check_is_user_company(request.user): raise PermissionDenied
+        assert request.user.is_authenticated and (not check_is_user_company(request.user)), PermissionDenied
         context = _get_context(request, any_random_integer=True, tzone=True)
         offers = Offer.objects.select_related("vacancy", "vacancy__company").filter(
             applicant=request.user, vacancy__deleted=False
