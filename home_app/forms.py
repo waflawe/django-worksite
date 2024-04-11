@@ -75,7 +75,7 @@ class CompanyRegisterForm(ApplicantRegisterForm):
 
 
 class UploadPhotoFormMixin(forms.ModelForm):
-    def __init__(self, photo_field, *args, **kwargs):
+    def __init__(self, photo_field: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields[photo_field].required, self.fields[photo_field].label = False, "Логотип компании:" \
             if photo_field == "company_logo" else "Ваш аватар:"

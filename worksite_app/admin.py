@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import *
+from worksite_app.models import Offer, Rating, Vacancy
 
 admin.site.register(Vacancy)
 admin.site.register(Offer)

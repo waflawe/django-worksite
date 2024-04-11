@@ -13,23 +13,23 @@ class Vacancy(models.Model):
 
     company = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100, null=False, validators=[MinLengthValidator(8)])
-    description = models.TextField(max_length=2048, validators=[MinLengthValidator(64)], null=True)
+    description = models.TextField(max_length=2048, validators=[MinLengthValidator(64)], blank=True, default="")
     money = models.PositiveIntegerField(validators=[MaxValueValidator(1000000), MinValueValidator(100)])
     experience = models.CharField(max_length=1, choices=EXPERIENCE_CHOICES)
     city = models.CharField(max_length=20)
-    skills = models.CharField(max_length=512, null=True)
+    skills = models.CharField(max_length=512, blank=True, default="")
     time_added = models.DateTimeField(auto_now_add=True, blank=True)
     archived = models.BooleanField(default=False)
     deleted = models.BooleanField(default=False)
 
-    def set_skills(self, value):
-        self.skills = json.dumps(value)
+    class Meta:
+        ordering = ("-time_added",)
 
     def __str__(self):
         return f"{self.name}"
 
-    class Meta:
-        ordering = "-time_added",
+    def set_skills(self, value):
+        self.skills = json.dumps(value)
 
 
 class Offer(models.Model):
@@ -38,7 +38,7 @@ class Offer(models.Model):
     applicant = models.ForeignKey(User, on_delete=models.CASCADE)
     vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE)
     resume = models.FileField(upload_to="offers/", default="")
-    resume_text = models.TextField(max_length=2048, null=True, validators=[MinLengthValidator(64)])
+    resume_text = models.TextField(max_length=2048, blank=True, default="", validators=[MinLengthValidator(64)])
     applyed = models.BooleanField(default=False)
     withdrawn = models.BooleanField(default=False)
     time_added = models.DateTimeField(auto_now_add=True)
@@ -69,8 +69,11 @@ class Rating(models.Model):
     applicant = models.ForeignKey(User, on_delete=models.CASCADE)
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
     rating = models.PositiveIntegerField(choices=RATINGS, validators=[MaxValueValidator(5)])
-    comment = models.TextField(max_length=2048, validators=[MinLengthValidator(64)], null=True)
+    comment = models.TextField(max_length=2048, validators=[MinLengthValidator(64)], blank=True, default="")
     time_added = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
         ordering = "-time_added",
+
+    def __str__(self):
+        return f"{self.applicant} review on the '{self.company.first_name}' company"

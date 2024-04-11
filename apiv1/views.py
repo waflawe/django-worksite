@@ -86,7 +86,7 @@ class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModel
         status.HTTP_200_OK: serializer_detail_class,
         status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
     })
-    def retrieve(self, request, *args, **kwargs) -> Response:
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:
         """ Получение конктретной вакансии по ее id. """
 
         vacancy = CheckPermissionsToSeeVacancy.check_perms(request, self.kwargs[self.lookup_url_kwarg])
@@ -97,7 +97,7 @@ class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModel
         status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
         status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
     })
-    def destroy(self, request, *args, **kwargs) -> Response:
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
         """ Удаление конктретной вакансии по ее id. """
 
         self.delete_vacancy(request, self.kwargs[self.lookup_url_kwarg])
@@ -107,7 +107,7 @@ class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModel
         status.HTTP_201_CREATED: None,
         status.HTTP_400_BAD_REQUEST: CustomErrorSerializer
     })
-    def create(self, request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args, **kwargs) -> Response:
         """ Создание новой вакансии. """
 
         flag = self.add_vacancy(request.data, request.user)
@@ -132,7 +132,7 @@ class ApplicantOffersViewSet(GenericViewSet, mixins.ListModelMixin, mixins.Creat
         status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
         status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
     })
-    def create(self, request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args, **kwargs) -> Response:
         """ Добавление нового отклика на вакансию. """
 
         flag = self.add_offer(request.user, request.data.get("vacancy", 0), request.data, request.data)
@@ -145,7 +145,7 @@ class ApplicantOffersViewSet(GenericViewSet, mixins.ListModelMixin, mixins.Creat
     }, parameters=[
             OpenApiParameter(name="ids", type=int, location=OpenApiParameter.PATH)
     ])
-    def destroy(self, request, *args, **kwargs) -> Response:
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
         """ Отозвать отклик на вакансию по его id. """
 
         self.withdraw_offer(request, self.kwargs[self.lookup_url_kwarg])
@@ -155,7 +155,7 @@ class ApplicantOffersViewSet(GenericViewSet, mixins.ListModelMixin, mixins.Creat
         status.HTTP_200_OK: serializer_class,
         status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
     })
-    def retrieve(self, request, *args, **kwargs) -> Response:
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:
         """ Получение оффера соискателя. """
 
         offer = get_object_or_404(Offer, pk=self.kwargs[self.lookup_url_kwarg])

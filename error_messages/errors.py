@@ -8,7 +8,7 @@ class E(NamedTuple):
 
 
 class ErrorsMeta(EnumMeta):
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         attribute = f"INVALID_{item.upper()}"
         return E(getattr(self, attribute, None), attribute)
 

@@ -18,7 +18,7 @@ class CompanySettings(models.Model):
     timezone = models.CharField(max_length=30, default=settings.DEFAULT_USER_TIMEZONE)
     company_logo = models.ImageField(upload_to=company_logo_path, default=settings.DEFAULT_COMPANY_LOGO_FILENAME)
     company_description = models.TextField(default="", validators=(MaxLengthValidator(5000), MinLengthValidator(64)))
-    company_site = models.URLField(null=True, blank=True)
+    company_site = models.URLField(blank=True, default="")
     rating = models.FloatField(validators=(MinValueValidator(0), MaxValueValidator(5)), default=0)
 
     def __str__(self):

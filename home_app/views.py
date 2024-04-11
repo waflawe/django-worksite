@@ -16,8 +16,10 @@ def get_register_page(request: HttpRequest) -> bool:
     """ Функция для определения запрашиваемой страницы регистрации. """
 
     applicant = request.GET.get("applicant", 'True')
-    if applicant == 'True': return True
-    if applicant == 'False': return False
+    if applicant == 'True':
+        return True
+    if applicant == 'False':
+        return False
     raise Http404
 
 
@@ -29,7 +31,8 @@ def home_view(request: HttpRequest) -> HttpResponse:
 class AuthView(View):
     def get(self, request: HttpRequest, flag_error: Optional[bool] = False, form: Optional[Mapping] = None) -> \
             HttpResponse:
-        if check_is_user_auth(request): return redirect("/")
+        if check_is_user_auth(request):
+            return redirect("/")
         context = {
             "form": AuthForm(form),
             "flag_error": flag_error,
@@ -38,7 +41,8 @@ class AuthView(View):
         return render(request, "home_app/user_auth.html", context=context)
 
     def post(self, request: HttpRequest) -> HttpResponse:
-        if check_is_user_auth(request): return redirect("/")
+        if check_is_user_auth(request):
+            return redirect("/")
 
         form = AuthForm(request.POST)
 
@@ -68,7 +72,8 @@ class LogoutView(LoginRequiredMixin, View):
 class RegisterView(View):
     def get(self, request: HttpRequest, flag_error: Optional[bool] = False, form: Optional[Mapping] = None) -> \
             HttpResponse:
-        if check_is_user_auth(request=request): return redirect("/")
+        if check_is_user_auth(request=request):
+            return redirect("/")
         applicant = get_register_page(request)
         context = {
             "form": ApplicantRegisterForm(form) if applicant else CompanyRegisterForm(form),
@@ -78,7 +83,8 @@ class RegisterView(View):
         return render(request, "home_app/user_register.html", context=context)
 
     def post(self, request: HttpRequest) -> HttpResponse:
-        if check_is_user_auth(request=request): return redirect("/")
+        if check_is_user_auth(request=request):
+            return redirect("/")
         return RegisterViewUtils.register_view_utils(self, request, applicant=get_register_page(request))
 
 

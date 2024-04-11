@@ -188,7 +188,8 @@ class AddOfferMixin(DataValidationMixin):
 
         if is_valid:
             try:
-                if v.instance.resume_text == "": v.instance.resume_text = None
+                if v.instance.resume_text == "":
+                    v.instance.resume_text = None
                 v.save()
                 return DefaultPOSTReturn(True)
             except IntegrityError:
@@ -236,7 +237,8 @@ class AddRatingMixin(DataValidationMixin):
 
     @staticmethod
     def check_perms(applicant: User, company: User) -> bool:
-        if (not applicant.is_authenticated) or check_is_user_company(applicant): return False
+        if (not applicant.is_authenticated) or check_is_user_company(applicant):
+            return False
         offer = Offer.objects.filter(
             vacancy__in=Vacancy.objects.filter(company=company).all(), applyed=True, applicant=applicant
         ).exists()
@@ -313,4 +315,4 @@ class CompanyApplyedOffersMixin(object):
 
     @staticmethod
     def check_perms(company: User) -> Literal[None] | NoReturn:
-        if not check_is_user_company(company): raise PermissionDenied
+        assert check_is_user_company(company), PermissionDenied

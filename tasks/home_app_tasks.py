@@ -20,7 +20,8 @@ def make_center_crop(applicant_avatar_path: str) -> Literal[None]:
 
 def _center_crop(img: Im) -> Im:
     width, height = img.size
-    if width / height == 1: return img
+    if width / height == 1:
+        return img
 
     left = (width - min(width, height)) / 2
     top = (height - min(width, height)) / 2

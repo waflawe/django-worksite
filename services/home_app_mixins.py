@@ -88,7 +88,7 @@ class UpdateSettingsMixin(DataValidationMixin):
     def _check_on_editions_description_and_site(self, data: Dict, settings_: Union[ApplicantSettings, CompanySettings],
                                                 company: bool, validation_class: Type) -> DefaultPOSTReturn:
         if data.get(self.Fields.DESCRIPTION, False) or data.get(self.Fields.SITE, False):
-            if not company: raise PermissionDenied
+            assert company, PermissionDenied
             data = data.copy()
             data.pop(self.Fields.COMPANY_LOGO, "")
             v, is_valid, data = self.validate_received_data(data, {}, settings_, validation_class=validation_class)

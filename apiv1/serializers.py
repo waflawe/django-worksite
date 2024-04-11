@@ -4,6 +4,7 @@ from typing import Dict, Literal, Tuple
 import pytz
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db.models import QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -68,7 +69,7 @@ class ApplicantSettingsSerializer(serializers.ModelSerializer):
 
 
 class ExperienceChoiceField(serializers.ChoiceField):
-    def to_representation(self, value):
+    def to_representation(self, value) -> str:
         return EXPERIENCE_CHOICES[int(value)][1]
 
 
@@ -116,7 +117,7 @@ class VacancysSerializer(serializers.ModelSerializer):
         )
 
     @classmethod
-    def setup_eager_loading(cls, queryset):
+    def setup_eager_loading(cls, queryset) -> QuerySet:
         queryset = queryset.prefetch_related("company")
         return queryset
 

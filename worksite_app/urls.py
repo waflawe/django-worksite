@@ -1,6 +1,20 @@
 from django.urls import path
 
-from .views import *
+from worksite_app.views import (
+    AddVacancyView,
+    ApplyOfferView,
+    DeleteVacancyView,
+    SomeCompanyView,
+    SomeVacancyView,
+    WithdrawOfferView,
+    company_applyed_offers,
+    company_rating,
+    company_vacancys,
+    home,
+    my_offers,
+    search,
+    vacancy_offers,
+)
 
 app_name = "worksite_app"
 
