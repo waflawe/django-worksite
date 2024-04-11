@@ -1,15 +1,15 @@
-from django.shortcuts import render, redirect, reverse
-from django.http import HttpRequest, HttpResponse, Http404
-from django.views.generic import View
-from django.contrib.auth import logout, authenticate, login
-from django.urls import reverse_lazy, NoReverseMatch
+from typing import Mapping, Optional
+
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import redirect, render, reverse
+from django.urls import NoReverseMatch, reverse_lazy
+from django.views.generic import View
 
-from services.home_app_utils import RegisterViewUtils, SettingsViewUtils
+from home_app.forms import ApplicantRegisterForm, AuthForm, CompanyRegisterForm
 from services.common_utils import check_is_user_auth, check_is_user_company
-from home_app.forms import AuthForm, ApplicantRegisterForm, CompanyRegisterForm
-
-from typing import Optional, Mapping
+from services.home_app_utils import RegisterViewUtils, SettingsViewUtils
 
 
 def get_register_page(request: HttpRequest) -> bool:

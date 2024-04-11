@@ -2,7 +2,7 @@ from django import forms
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 from worksite_app.constants import EXPERIENCE_CHOICES, RATINGS
-from worksite_app.models import Vacancy, Rating, Offer
+from worksite_app.models import Offer, Rating, Vacancy
 
 
 class AddVacancyForm(forms.ModelForm):

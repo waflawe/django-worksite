@@ -1,13 +1,12 @@
-from django.conf import settings
+import os
+from typing import Literal
 
 from celery import shared_task
-
-from services.common_utils import get_path_to_crop_photo
-
-import os
+from django.conf import settings
 from PIL import Image
 from PIL.Image import Image as Im
-from typing import Literal
+
+from services.common_utils import get_path_to_crop_photo
 
 
 @shared_task

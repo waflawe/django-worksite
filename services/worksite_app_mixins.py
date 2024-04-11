@@ -1,25 +1,29 @@
-from django.http import HttpRequest, Http404
-from django.utils import timezone
-from django.contrib.auth.models import User
-from django.db.models import Q, Avg
-from django.db.models.query import QuerySet
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.shortcuts import get_object_or_404
-from django.db import IntegrityError, models
+from typing import Any, Dict, Literal, NoReturn, Optional, Tuple, Type, Union
+
 from django import forms
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.db import IntegrityError, models
+from django.db.models import Avg, Q
+from django.db.models.query import QuerySet
+from django.http import Http404, HttpRequest
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.request import Request
-from django.conf import settings
-from django.core.cache import cache
 
-from worksite_app.constants import FILTERED_CITIES, EXPERIENCE_CHOICES_VALID_VALUES
-from worksite_app.models import Vacancy, Offer, Rating
+from error_messages.worksite_error_messages import OfferErrors, RatingErrors, VacancyErrors
 from services.common_utils import (
-    check_is_user_company, RequestHost, get_error_field, DefaultPOSTReturn, get_user_settings
+    DefaultPOSTReturn,
+    RequestHost,
+    check_is_user_company,
+    get_error_field,
+    get_user_settings,
 )
-from error_messages.worksite_error_messages import VacancyErrors, OfferErrors, RatingErrors
-
-from typing import Optional, Dict, Literal, Union, NoReturn, Tuple, Any, Type
+from worksite_app.constants import EXPERIENCE_CHOICES_VALID_VALUES, FILTERED_CITIES
+from worksite_app.models import Offer, Rating, Vacancy
 
 Instance = models.Model
 ValidationClass = Union[Type[serializers.ModelSerializer] | Type[forms.ModelForm]]

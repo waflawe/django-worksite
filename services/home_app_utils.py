@@ -1,18 +1,18 @@
 from __future__ import annotations
 
+from typing import Literal
+
+import pytz
+from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.conf import settings
-from django.core.cache import cache
 
-from home_app.forms import ApplicantRegisterForm, CompanyRegisterForm, ApplicantSettingsForm, CompanySettingsForm
-from services.common_utils import check_is_user_company, RequestHost, get_user_settings
+from home_app.forms import ApplicantRegisterForm, ApplicantSettingsForm, CompanyRegisterForm, CompanySettingsForm
+from home_app.models import ApplicantSettings, CompanySettings
+from services.common_utils import RequestHost, check_is_user_company, get_user_settings
 from services.home_app_mixins import UpdateSettingsMixin
-from home_app.models import CompanySettings, ApplicantSettings
-
-import pytz
-from typing import Literal
 
 Context = dict
 

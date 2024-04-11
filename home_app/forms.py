@@ -1,10 +1,10 @@
-from django.contrib.auth.forms import UserCreationForm
 from django import forms
-from django.forms import TextInput, PasswordInput, EmailInput, ClearableFileInput, URLInput, Textarea
-from django.core.validators import MaxLengthValidator, MinLengthValidator
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.core.validators import MaxLengthValidator, MinLengthValidator
+from django.forms import ClearableFileInput, EmailInput, PasswordInput, Textarea, TextInput, URLInput
 
-from home_app.models import CompanySettings, ApplicantSettings
+from home_app.models import ApplicantSettings, CompanySettings
 
 
 class AuthForm(forms.Form):

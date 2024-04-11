@@ -1,6 +1,7 @@
-from pathlib import Path
 from os.path import join
+from pathlib import Path
 from typing import List
+
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent

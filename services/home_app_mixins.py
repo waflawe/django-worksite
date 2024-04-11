@@ -1,22 +1,25 @@
-from rest_framework.request import Request
-from django.http.request import HttpRequest
-from django.core.exceptions import PermissionDenied
-from django.conf import settings
-from django.core.cache import cache
+import os
+from typing import Any, Dict, Literal, Tuple, Type, Union
 
-from services.common_utils import (
-    check_is_user_company, RequestHost, get_error_field, DefaultPOSTReturn, get_user_settings
-)
-from home_app.models import CompanySettings, ApplicantSettings
-from services.worksite_app_mixins import DataValidationMixin
-from home_app.forms import ApplicantSettingsForm, CompanySettingsForm
-from tasks.home_app_tasks import make_center_crop
+import pytz
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
+from django.http.request import HttpRequest
+from rest_framework.request import Request
+
 from apiv1.serializers import ApplicantSettingsSerializer, CompanySettingsSerializer
 from error_messages.home_error_messages import SettingsErrors
-
-from typing import Dict, Tuple, Union, Literal, Any, Type
-import pytz
-import os
+from home_app.forms import ApplicantSettingsForm, CompanySettingsForm
+from home_app.models import ApplicantSettings, CompanySettings
+from services.common_utils import (
+    DefaultPOSTReturn,
+    RequestHost,
+    check_is_user_company,
+    get_error_field,
+    get_user_settings,
+)
+from services.worksite_app_mixins import DataValidationMixin
+from tasks.home_app_tasks import make_center_crop
 
 
 class UpdateSettingsMixin(DataValidationMixin):

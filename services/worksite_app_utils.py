@@ -1,31 +1,44 @@
 from __future__ import annotations
 
-from django.http import HttpRequest, HttpResponse, Http404
-from django.shortcuts import redirect, get_object_or_404
-from django.db.models.query import QuerySet
-from django.db.models.fields.files import ImageFieldFile
-from django.urls import reverse
-from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
-from django.conf import settings
-from django.core.cache import cache
-
-from worksite_app.forms import AddVacancyForm, AddRatingForm, AddOfferForm
-from worksite_app.models import Vacancy, Offer, Rating
-from home_app.models import CompanySettings, ApplicantSettings
-from services.common_utils import (
-    get_timezone, get_path_to_crop_photo, check_is_user_company, RequestHost, get_user_settings
-)
-from services.worksite_app_mixins import (
-    VacancyFilterMixin, VacancySearchMixin, AddVacancyMixin, AddOfferMixin, AddRatingMixin,
-    CheckPermissionsToSeeVacancy, CheckPermissionsToSeeVacancyOffersAndDeleteVacancy, WithdrawOfferMixin,
-    CompanyApplyedOffersMixin, DeleteVacancyMixin, ApplyOfferMixin, get_company_ratings
-)
-from worksite_app.constants import FILTERED_CITIES, EXPERIENCE_CHOICES
-
-from typing import List, Tuple, NamedTuple, Literal, Optional, NoReturn, Callable
 import os
 from random import randrange
+from typing import Callable, List, Literal, NamedTuple, NoReturn, Optional, Tuple
+
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
+from django.db.models.fields.files import ImageFieldFile
+from django.db.models.query import QuerySet
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+
+from home_app.models import ApplicantSettings, CompanySettings
+from services.common_utils import (
+    RequestHost,
+    check_is_user_company,
+    get_path_to_crop_photo,
+    get_timezone,
+    get_user_settings,
+)
+from services.worksite_app_mixins import (
+    AddOfferMixin,
+    AddRatingMixin,
+    AddVacancyMixin,
+    ApplyOfferMixin,
+    CheckPermissionsToSeeVacancy,
+    CheckPermissionsToSeeVacancyOffersAndDeleteVacancy,
+    CompanyApplyedOffersMixin,
+    DeleteVacancyMixin,
+    VacancyFilterMixin,
+    VacancySearchMixin,
+    WithdrawOfferMixin,
+    get_company_ratings,
+)
+from worksite_app.constants import EXPERIENCE_CHOICES, FILTERED_CITIES
+from worksite_app.forms import AddOfferForm, AddRatingForm, AddVacancyForm
+from worksite_app.models import Offer, Rating, Vacancy
 
 Context = dict
 num = 100000

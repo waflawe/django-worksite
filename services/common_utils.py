@@ -1,12 +1,12 @@
-from django.http import HttpRequest
+from typing import Any, Literal, NamedTuple, Optional
+
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.conf import settings
+from django.http import HttpRequest
 
 from error_messages.errors import E
-from home_app.models import CompanySettings, ApplicantSettings
-
-from typing import Literal, Any, NamedTuple, Optional
+from home_app.models import ApplicantSettings, CompanySettings
 
 UserSettings = CompanySettings | ApplicantSettings
 

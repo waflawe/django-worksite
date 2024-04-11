@@ -1,18 +1,28 @@
-from django.shortcuts import render, redirect, reverse
-from django.http import HttpRequest, HttpResponse
-from django.views.generic import View
-from django.core.exceptions import PermissionDenied
-
-from services.worksite_app_utils import (
-    HomeViewUtils, SomeVacancyViewUtils, SomeCompanyViewUtils, CompanyVacancysViewUtils, CompanyRatingViewUtils,
-    CompanyApplyedOffersUtils, AddVacancyViewUtils, VacancyOffersViewUtils, ApplyOfferViewUtils, DeleteVacancyUtils,
-    MyOffersViewUtils, WithdrawOfferUtils, SearchViewUtils
-)
-from services.common_utils import check_is_user_company
-from worksite_app.forms import AddVacancyForm
-from worksite_app.constants import EXPERIENCE_CHOICES, FILTERED_CITIES
-
 from typing import Optional
+
+from django.core.exceptions import PermissionDenied
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect, render, reverse
+from django.views.generic import View
+
+from services.common_utils import check_is_user_company
+from services.worksite_app_utils import (
+    AddVacancyViewUtils,
+    ApplyOfferViewUtils,
+    CompanyApplyedOffersUtils,
+    CompanyRatingViewUtils,
+    CompanyVacancysViewUtils,
+    DeleteVacancyUtils,
+    HomeViewUtils,
+    MyOffersViewUtils,
+    SearchViewUtils,
+    SomeCompanyViewUtils,
+    SomeVacancyViewUtils,
+    VacancyOffersViewUtils,
+    WithdrawOfferUtils,
+)
+from worksite_app.constants import EXPERIENCE_CHOICES, FILTERED_CITIES
+from worksite_app.forms import AddVacancyForm
 
 
 def home(request: HttpRequest) -> HttpResponse:

@@ -1,10 +1,18 @@
-from django.urls import path, include
-from rest_framework.routers import SimpleRouter
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.routers import SimpleRouter
 
-from apiv1.views import (VacancyViewSet, ApplicantOffersViewSet, GetVacancyOffersAPIView, GetCompanyDetailAPIView,
-                         GetCompanyRatingsAPIView, CompanyApplyedOffersAPIView, AddRatingAPIView, ApplyOfferAPIView,
-                         UpdateSettingsAPIView)
+from apiv1.views import (
+    AddRatingAPIView,
+    ApplicantOffersViewSet,
+    ApplyOfferAPIView,
+    CompanyApplyedOffersAPIView,
+    GetCompanyDetailAPIView,
+    GetCompanyRatingsAPIView,
+    GetVacancyOffersAPIView,
+    UpdateSettingsAPIView,
+    VacancyViewSet,
+)
 
 router = SimpleRouter()
 router.register(r"vacancys", VacancyViewSet, basename="vacancy")

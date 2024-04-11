@@ -1,11 +1,11 @@
-from django.db import models
-from django.core.validators import MaxValueValidator, MinValueValidator, MinLengthValidator
+import json
+
 from django.contrib.auth.models import User
+from django.core.validators import MaxValueValidator, MinLengthValidator, MinValueValidator
+from django.db import models
 from django.db.models.query_utils import Q
 
 from .constants import EXPERIENCE_CHOICES, RATINGS
-
-import json
 
 
 class Vacancy(models.Model):

@@ -1,7 +1,7 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator, MaxLengthValidator
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.validators import MaxLengthValidator, MaxValueValidator, MinLengthValidator, MinValueValidator
+from django.db import models
 
 
 def company_logo_path(instance, filename: str) -> str:

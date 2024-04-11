@@ -1,31 +1,48 @@
-from rest_framework.generics import ListAPIView
+from typing import NamedTuple, Optional
+
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from rest_framework import mixins, status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from rest_framework import mixins
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
-from drf_spectacular.utils import extend_schema, OpenApiParameter, extend_schema_view
 
+from apiv1.permissions import IsApplicant, IsAuthenticatedCompanyOrReadOnly, IsCompany
 from apiv1.serializers import (
-    VacancysSerializer, CompanyDetailSerializer, VacancyOffersSerializer, RatingsSerializer, VacancyDetailSerializer,
-    DefaultErrorSerializer, CompanySettingsSerializer, ApplicantSettingsSerializer, CustomErrorSerializer,
-    OffersFullSerializer, CompanyApplyedOffersSerializer
+    ApplicantSettingsSerializer,
+    CompanyApplyedOffersSerializer,
+    CompanyDetailSerializer,
+    CompanySettingsSerializer,
+    CustomErrorSerializer,
+    DefaultErrorSerializer,
+    OffersFullSerializer,
+    RatingsSerializer,
+    VacancyDetailSerializer,
+    VacancyOffersSerializer,
+    VacancysSerializer,
 )
-from services.worksite_app_mixins import (
-    DefaultPOSTReturn, VacancyFilterMixin, VacancySearchMixin, DeleteVacancyMixin, AddVacancyMixin,
-    CheckPermissionsToSeeVacancy, CheckPermissionsToSeeVacancyOffersAndDeleteVacancy, WithdrawOfferMixin, AddOfferMixin,
-    AddRatingMixin, ApplyOfferMixin, CompanyApplyedOffersMixin, get_company_ratings
-)
-from services.home_app_mixins import UpdateSettingsMixin
-from worksite_app.models import Vacancy, Offer
 from services.common_utils import RequestHost, check_is_user_company
-from apiv1.permissions import IsApplicant, IsCompany, IsAuthenticatedCompanyOrReadOnly
-
-from typing import NamedTuple, Optional
+from services.home_app_mixins import UpdateSettingsMixin
+from services.worksite_app_mixins import (
+    AddOfferMixin,
+    AddRatingMixin,
+    AddVacancyMixin,
+    ApplyOfferMixin,
+    CheckPermissionsToSeeVacancy,
+    CheckPermissionsToSeeVacancyOffersAndDeleteVacancy,
+    CompanyApplyedOffersMixin,
+    DefaultPOSTReturn,
+    DeleteVacancyMixin,
+    VacancyFilterMixin,
+    VacancySearchMixin,
+    WithdrawOfferMixin,
+    get_company_ratings,
+)
+from worksite_app.models import Offer, Vacancy
 
 
 class POSTStatuses(NamedTuple):

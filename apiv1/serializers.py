@@ -1,17 +1,17 @@
-from rest_framework import serializers
-from django.contrib.auth.models import User
-from drf_spectacular.utils import extend_schema_field
-from drf_spectacular.types import OpenApiTypes
-from django.conf import settings
+from datetime import datetime
+from typing import Dict, Literal, Tuple
 
-from worksite_app.models import Vacancy, Offer, Rating
+import pytz
+from django.conf import settings
+from django.contrib.auth.models import User
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
+from home_app.models import ApplicantSettings, CompanySettings
 from services.common_utils import get_timezone, get_user_settings
 from worksite_app.constants import EXPERIENCE_CHOICES
-from home_app.models import CompanySettings, ApplicantSettings
-
-from datetime import datetime
-from typing import Tuple, Dict, Literal
-import pytz
+from worksite_app.models import Offer, Rating, Vacancy
 
 UserSettings = ApplicantSettings | CompanySettings
 
