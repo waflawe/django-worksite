@@ -35,5 +35,5 @@ urlpatterns = [
     path("offers/applyed/", company_applyed_offers, name="company_applyed_offers"),
     # Урлы соискателей.
     path("offers/my/", my_offers, name="my_offers"),
-    path("offers/my/<int:ids>/withdraw/", WithdrawOfferView.as_view(), name="withdraw_offer")
+    path("offers/my/<int:ids>/withdraw/", WithdrawOfferView.as_view(), name="withdraw_offer"),
 ]

@@ -9,7 +9,7 @@ from .constants import EXPERIENCE_CHOICES, RATINGS
 
 
 class Vacancy(models.Model):
-    """ Модель для вакансий. """
+    """Модель для вакансий."""
 
     company = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100, null=False, validators=[MinLengthValidator(8)])
@@ -33,7 +33,7 @@ class Vacancy(models.Model):
 
 
 class Offer(models.Model):
-    """ Модель откликов соискателей на вакансии. """
+    """Модель откликов соискателей на вакансии."""
 
     applicant = models.ForeignKey(User, on_delete=models.CASCADE)
     vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE)
@@ -46,25 +46,19 @@ class Offer(models.Model):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(   # проверка на то, что резюме написано текстом или отправлен файл с резюме.
-                check=(
-                              ~Q(resume="") &
-                              Q(resume_text__isnull=True)
-                      ) | (
-                              Q(resume="") &
-                              Q(resume_text__isnull=False)
-                      ),
-                name='only_one_resume',
+            models.CheckConstraint(  # проверка на то, что резюме написано текстом или отправлен файл с резюме.
+                check=(~Q(resume="") & Q(resume_text__isnull=True)) | (Q(resume="") & Q(resume_text__isnull=False)),
+                name="only_one_resume",
             )
         ]
-        ordering = "-time_added",
+        ordering = ("-time_added",)
 
     def __str__(self):
         return f"{self.pk} offer by {self.applicant}"
 
 
 class Rating(models.Model):
-    """ Модель отзывов соискателей на компании. """
+    """Модель отзывов соискателей на компании."""
 
     applicant = models.ForeignKey(User, on_delete=models.CASCADE)
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
@@ -73,7 +67,7 @@ class Rating(models.Model):
     time_added = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
-        ordering = "-time_added",
+        ordering = ("-time_added",)
 
     def __str__(self):
         return f"{self.applicant} review on the '{self.company.first_name}' company"

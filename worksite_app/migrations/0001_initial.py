@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,57 +15,119 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Rating',
+            name="Rating",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('rating', models.PositiveIntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')], validators=[django.core.validators.MaxValueValidator(5)])),
-                ('comment', models.TextField(max_length=2048, null=True, validators=[django.core.validators.MinLengthValidator(64)])),
-                ('time_added', models.DateTimeField(auto_now_add=True, null=True)),
-                ('applicant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "rating",
+                    models.PositiveIntegerField(
+                        choices=[(1, "1"), (2, "2"), (3, "3"), (4, "4"), (5, "5")],
+                        validators=[django.core.validators.MaxValueValidator(5)],
+                    ),
+                ),
+                (
+                    "comment",
+                    models.TextField(
+                        max_length=2048, null=True, validators=[django.core.validators.MinLengthValidator(64)]
+                    ),
+                ),
+                ("time_added", models.DateTimeField(auto_now_add=True, null=True)),
+                (
+                    "applicant",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+                ),
+                (
+                    "company",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="+", to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-time_added',),
+                "ordering": ("-time_added",),
             },
         ),
         migrations.CreateModel(
-            name='Vacancy',
+            name="Vacancy",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, validators=[django.core.validators.MinLengthValidator(8)])),
-                ('description', models.TextField(max_length=2048, null=True, validators=[django.core.validators.MinLengthValidator(64)])),
-                ('money', models.PositiveIntegerField(validators=[django.core.validators.MaxValueValidator(1000000), django.core.validators.MinValueValidator(100)])),
-                ('experience', models.CharField(choices=[('0', 'не требуется'), ('1', '1 год'), ('2', '1-3 лет'), ('3', '3-5 лет'), ('4', '5+ лет')], max_length=1)),
-                ('city', models.CharField(max_length=20)),
-                ('skills', models.CharField(max_length=512, null=True)),
-                ('time_added', models.DateTimeField(auto_now_add=True)),
-                ('archived', models.BooleanField(default=False)),
-                ('deleted', models.BooleanField(default=False)),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=100, validators=[django.core.validators.MinLengthValidator(8)])),
+                (
+                    "description",
+                    models.TextField(
+                        max_length=2048, null=True, validators=[django.core.validators.MinLengthValidator(64)]
+                    ),
+                ),
+                (
+                    "money",
+                    models.PositiveIntegerField(
+                        validators=[
+                            django.core.validators.MaxValueValidator(1000000),
+                            django.core.validators.MinValueValidator(100),
+                        ]
+                    ),
+                ),
+                (
+                    "experience",
+                    models.CharField(
+                        choices=[
+                            ("0", "не требуется"),
+                            ("1", "1 год"),
+                            ("2", "1-3 лет"),
+                            ("3", "3-5 лет"),
+                            ("4", "5+ лет"),
+                        ],
+                        max_length=1,
+                    ),
+                ),
+                ("city", models.CharField(max_length=20)),
+                ("skills", models.CharField(max_length=512, null=True)),
+                ("time_added", models.DateTimeField(auto_now_add=True)),
+                ("archived", models.BooleanField(default=False)),
+                ("deleted", models.BooleanField(default=False)),
+                (
+                    "company",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+                ),
             ],
             options={
-                'ordering': ('-time_added',),
+                "ordering": ("-time_added",),
             },
         ),
         migrations.CreateModel(
-            name='Offer',
+            name="Offer",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('resume', models.FileField(default='', upload_to='offers/')),
-                ('resume_text', models.TextField(max_length=2048, null=True, validators=[django.core.validators.MinLengthValidator(64)])),
-                ('applyed', models.BooleanField(default=False)),
-                ('withdrawn', models.BooleanField(default=False)),
-                ('time_added', models.DateTimeField(auto_now_add=True)),
-                ('time_applyed', models.DateTimeField(null=True)),
-                ('applicant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
-                ('vacancy', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='worksite_app.vacancy')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("resume", models.FileField(default="", upload_to="offers/")),
+                (
+                    "resume_text",
+                    models.TextField(
+                        max_length=2048, null=True, validators=[django.core.validators.MinLengthValidator(64)]
+                    ),
+                ),
+                ("applyed", models.BooleanField(default=False)),
+                ("withdrawn", models.BooleanField(default=False)),
+                ("time_added", models.DateTimeField(auto_now_add=True)),
+                ("time_applyed", models.DateTimeField(null=True)),
+                (
+                    "applicant",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+                ),
+                ("vacancy", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="worksite_app.vacancy")),
             ],
             options={
-                'ordering': ('-time_added',),
+                "ordering": ("-time_added",),
             },
         ),
         migrations.AddConstraint(
-            model_name='offer',
-            constraint=models.CheckConstraint(check=models.Q(models.Q(models.Q(('resume', ''), _negated=True), ('resume_text__isnull', True)), models.Q(('resume', ''), ('resume_text__isnull', False)), _connector='OR'), name='only_one_resume'),
+            model_name="offer",
+            constraint=models.CheckConstraint(
+                check=models.Q(
+                    models.Q(models.Q(("resume", ""), _negated=True), ("resume_text__isnull", True)),
+                    models.Q(("resume", ""), ("resume_text__isnull", False)),
+                    _connector="OR",
+                ),
+                name="only_one_resume",
+            ),
         ),
     ]

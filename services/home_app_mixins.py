@@ -23,12 +23,13 @@ from tasks.home_app_tasks import make_center_crop
 
 
 class UpdateSettingsMixin(DataValidationMixin):
-    """ Миксин для обновления настроек пользователя. """
+    """Миксин для обновления настроек пользователя."""
 
-    request_host = None   # переменная-источник запроса. Имеет значение RequestHost.APIVIEW или RequestHost.VIEW
+    # Переменная-источник запроса. Имеет значение RequestHost.APIVIEW или RequestHost.VIEW
+    request_host: RequestHost = None
 
     class Fields:
-        """ Перечисление всех полей настроек. """
+        """Перечисление всех полей настроек."""
 
         TIMEZONE = "timezone"
         COMPANY_LOGO = "company_logo"
@@ -41,38 +42,42 @@ class UpdateSettingsMixin(DataValidationMixin):
         return self._check_and_update_settings(request, data, files, validation_class, company)
 
     def _get_validation_class(self, request: HttpRequest | Request) -> Tuple[Type, bool]:
-        """ Функция для определения классa, по которому будет происходить валидация входных данных. """
+        """Функция для определения классa, по которому будет происходить валидация входных данных."""
 
         company = check_is_user_company(request.user)
-        validation_class = (CompanySettingsForm if company else ApplicantSettingsForm) \
-            if self.request_host is RequestHost.VIEW else \
-            (CompanySettingsSerializer if company else ApplicantSettingsSerializer)
+        validation_class = (
+            (CompanySettingsForm if company else ApplicantSettingsForm)
+            if self.request_host is RequestHost.VIEW
+            else (CompanySettingsSerializer if company else ApplicantSettingsSerializer)
+        )
         return validation_class, company
 
-    def _check_and_update_settings(self, request: HttpRequest | Request, data: Dict, files: Dict,
-                                   validation_class: Type, company: bool) -> DefaultPOSTReturn:
+    def _check_and_update_settings(
+        self, request: HttpRequest | Request, data: Dict, files: Dict, validation_class: Type, company: bool
+    ) -> DefaultPOSTReturn:
         settings_ = get_user_settings(request.user)
 
         for flag in (
-                self._check_on_editions_timezone(data, settings_, company),
-                self._check_on_editions_photo(files, settings_, company, validation_class),
-                self._check_on_editions_description_and_site(data, settings_, company,
-                                                             validation_class)
+            self._check_on_editions_timezone(data, settings_, company),
+            self._check_on_editions_photo(files, settings_, company, validation_class),
+            self._check_on_editions_description_and_site(data, settings_, company, validation_class),
         ):
             if not flag.status:
                 return flag
         return DefaultPOSTReturn(status=True)
 
-    def _check_on_editions_timezone(self, data: Dict, settings_: Union[ApplicantSettings, CompanySettings],
-                                    company: bool) -> DefaultPOSTReturn:
+    def _check_on_editions_timezone(
+        self, data: Dict, settings_: Union[ApplicantSettings, CompanySettings], company: bool
+    ) -> DefaultPOSTReturn:
         if data.get(self.Fields.TIMEZONE, None):
             flag = self._set_timezone(data[self.Fields.TIMEZONE], settings_)
             if flag is not None:
                 return DefaultPOSTReturn(False, SettingsErrors[self.Fields.TIMEZONE])
         return DefaultPOSTReturn(True)
 
-    def _check_on_editions_photo(self, files: Dict, settings_: Union[ApplicantSettings, CompanySettings],
-                                 company: bool, validation_class: Type) -> DefaultPOSTReturn:
+    def _check_on_editions_photo(
+        self, files: Dict, settings_: Union[ApplicantSettings, CompanySettings], company: bool, validation_class: Type
+    ) -> DefaultPOSTReturn:
         photo_field = self.Fields.COMPANY_LOGO if company else self.Fields.APPLICANT_AVATAR
         if files.get(photo_field, False):
             files = files.copy()
@@ -85,8 +90,9 @@ class UpdateSettingsMixin(DataValidationMixin):
             self._save_uploaded_photo(v, settings_, company)
         return DefaultPOSTReturn(True)
 
-    def _check_on_editions_description_and_site(self, data: Dict, settings_: Union[ApplicantSettings, CompanySettings],
-                                                company: bool, validation_class: Type) -> DefaultPOSTReturn:
+    def _check_on_editions_description_and_site(
+        self, data: Dict, settings_: Union[ApplicantSettings, CompanySettings], company: bool, validation_class: Type
+    ) -> DefaultPOSTReturn:
         if data.get(self.Fields.DESCRIPTION, False) or data.get(self.Fields.SITE, False):
             assert company, PermissionDenied
             data = data.copy()
@@ -102,11 +108,16 @@ class UpdateSettingsMixin(DataValidationMixin):
             return True
         settings_.timezone = timezone
         settings_.save()
+        return
 
-    def _save_uploaded_photo(self, validator_object: Any, user_settings: Union[CompanySettings, ApplicantSettings],
-                             company: bool) -> Literal[None]:
-        path_to_photo_dir = f"{settings.MEDIA_ROOT}{settings.CUSTOM_COMPANY_LOGOS_DIR}/{user_settings.company.pk}/" \
-            if company else f"{settings.MEDIA_ROOT}{settings.CUSTOM_APPLICANT_AVATARS_DIR}/{user_settings.applicant.pk}"
+    def _save_uploaded_photo(
+        self, validator_object: Any, user_settings: Union[CompanySettings, ApplicantSettings], company: bool
+    ) -> Literal[None]:
+        path_to_photo_dir = (
+            f"{settings.MEDIA_ROOT}{settings.CUSTOM_COMPANY_LOGOS_DIR}/{user_settings.company.pk}/"
+            if company
+            else f"{settings.MEDIA_ROOT}{settings.CUSTOM_APPLICANT_AVATARS_DIR}/{user_settings.applicant.pk}"
+        )
         try:
             for file in os.listdir(settings.BASE_DIR / path_to_photo_dir):
                 os.remove(os.path.join(settings.BASE_DIR, path_to_photo_dir, file))

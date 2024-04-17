@@ -10,7 +10,8 @@ class E(NamedTuple):
 class ErrorsMeta(EnumMeta):
     def __getitem__(self, item: str):
         attribute = f"INVALID_{item.upper()}"
-        return E(getattr(self, attribute, None), attribute)
+        message: str = getattr(self, attribute, None)
+        return E(message, attribute)
 
 
 class BaseErrorsEnum(StrEnum, metaclass=ErrorsMeta):

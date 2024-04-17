@@ -61,10 +61,18 @@ class POSTView(object):
         return Response(data, status=statuses.success if flag.status else statuses.error)
 
 
-class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.DestroyModelMixin,
-                     mixins.CreateModelMixin, VacancyFilterMixin, VacancySearchMixin, DeleteVacancyMixin,
-                     AddVacancyMixin):
-    """ Вьюсет для отображения всех, одной, удаления, добавления вакансий на сайте. """
+class VacancyViewSet(
+    GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.CreateModelMixin,
+    VacancyFilterMixin,
+    VacancySearchMixin,
+    DeleteVacancyMixin,
+    AddVacancyMixin,
+):
+    """Вьюсет для отображения всех, одной, удаления, добавления вакансий на сайте."""
 
     request_host = RequestHost.APIVIEW
 
@@ -82,41 +90,49 @@ class VacancyViewSet(GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModel
         queryset = self.get_serializer_class().setup_eager_loading(queryset)
         return queryset
 
-    @extend_schema(responses={
-        status.HTTP_200_OK: serializer_detail_class,
-        status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-    })
+    @extend_schema(
+        responses={status.HTTP_200_OK: serializer_detail_class, status.HTTP_404_NOT_FOUND: DefaultErrorSerializer}
+    )
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
-        """ Получение конктретной вакансии по ее id. """
+        """Получение конктретной вакансии по ее id."""
 
         vacancy = CheckPermissionsToSeeVacancy.check_perms(request, self.kwargs[self.lookup_url_kwarg])
         return Response(self.serializer_detail_class(vacancy, context={"request": request}).data)
 
-    @extend_schema(responses={
-        status.HTTP_204_NO_CONTENT: None,
-        status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
-        status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-    })
+    @extend_schema(
+        responses={
+            status.HTTP_204_NO_CONTENT: None,
+            status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
+            status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
+        }
+    )
     def destroy(self, request: Request, *args, **kwargs) -> Response:
-        """ Удаление конктретной вакансии по ее id. """
+        """Удаление конктретной вакансии по ее id."""
 
         self.delete_vacancy(request, self.kwargs[self.lookup_url_kwarg])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @extend_schema(request=VacancyDetailSerializer, responses={
-        status.HTTP_201_CREATED: None,
-        status.HTTP_400_BAD_REQUEST: CustomErrorSerializer
-    })
+    @extend_schema(
+        request=VacancyDetailSerializer,
+        responses={status.HTTP_201_CREATED: None, status.HTTP_400_BAD_REQUEST: CustomErrorSerializer},
+    )
     def create(self, request: Request, *args, **kwargs) -> Response:
-        """ Создание новой вакансии. """
+        """Создание новой вакансии."""
 
         flag = self.add_vacancy(request.data, request.user)
         return POSTView.get_response(flag)
 
 
-class ApplicantOffersViewSet(GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin,
-                             mixins.RetrieveModelMixin, AddOfferMixin, WithdrawOfferMixin):
-    """ Вьюсет для отображения всех, одной, добавления, удаления предложений на вакансии со стороны соискателя. """
+class ApplicantOffersViewSet(
+    GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.RetrieveModelMixin,
+    AddOfferMixin,
+    WithdrawOfferMixin,
+):
+    """Вьюсет для отображения всех, одной, добавления, удаления предложений на вакансии со стороны соискателя."""
 
     serializer_class = validation_class = OffersFullSerializer
     lookup_url_kwarg = "ids"
@@ -126,69 +142,74 @@ class ApplicantOffersViewSet(GenericViewSet, mixins.ListModelMixin, mixins.Creat
     def get_queryset(self):
         return Offer.objects.filter(applicant=self.request.user, vacancy__deleted=False)
 
-    @extend_schema(responses={
-        status.HTTP_201_CREATED: None,
-        status.HTTP_400_BAD_REQUEST: CustomErrorSerializer,
-        status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
-        status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-    })
+    @extend_schema(
+        responses={
+            status.HTTP_201_CREATED: None,
+            status.HTTP_400_BAD_REQUEST: CustomErrorSerializer,
+            status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
+            status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
+        }
+    )
     def create(self, request: Request, *args, **kwargs) -> Response:
-        """ Добавление нового отклика на вакансию. """
+        """Добавление нового отклика на вакансию."""
 
         flag = self.add_offer(request.user, request.data.get("vacancy", 0), request.data, request.data)
         return POSTView.get_response(flag)
 
-    @extend_schema(responses={
-        status.HTTP_204_NO_CONTENT: None,
-        status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
-        status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-    }, parameters=[
-            OpenApiParameter(name="ids", type=int, location=OpenApiParameter.PATH)
-    ])
+    @extend_schema(
+        responses={
+            status.HTTP_204_NO_CONTENT: None,
+            status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
+            status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
+        },
+        parameters=[OpenApiParameter(name="ids", type=int, location=OpenApiParameter.PATH)],
+    )
     def destroy(self, request: Request, *args, **kwargs) -> Response:
-        """ Отозвать отклик на вакансию по его id. """
+        """Отозвать отклик на вакансию по его id."""
 
         self.withdraw_offer(request, self.kwargs[self.lookup_url_kwarg])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @extend_schema(responses={
-        status.HTTP_200_OK: serializer_class,
-        status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-    })
+    @extend_schema(responses={status.HTTP_200_OK: serializer_class, status.HTTP_404_NOT_FOUND: DefaultErrorSerializer})
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
-        """ Получение оффера соискателя. """
+        """Получение оффера соискателя."""
 
         offer = get_object_or_404(Offer, pk=self.kwargs[self.lookup_url_kwarg])
-        return Response(self.get_serializer_class()(instance=offer, context={"request": request}).data,
-                        status=status.HTTP_200_OK)
+        return Response(
+            self.get_serializer_class()(instance=offer, context={"request": request}).data, status=status.HTTP_200_OK
+        )
 
 
 class UpdateSettingsAPIView(APIView, UpdateSettingsMixin):
     request_host = RequestHost.APIVIEW
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(request={
-        "Соискатель": ApplicantSettingsSerializer,
-        "Компания": CompanySettingsSerializer
-    }, responses={
-        status.HTTP_201_CREATED: None,
-        status.HTTP_400_BAD_REQUEST: CustomErrorSerializer,
-        status.HTTP_401_UNAUTHORIZED: DefaultErrorSerializer
-    })
+    @extend_schema(
+        request={"Соискатель": ApplicantSettingsSerializer, "Компания": CompanySettingsSerializer},
+        responses={
+            status.HTTP_201_CREATED: None,
+            status.HTTP_400_BAD_REQUEST: CustomErrorSerializer,
+            status.HTTP_401_UNAUTHORIZED: DefaultErrorSerializer,
+        },
+    )
     def post(self, request: Request):
-        """ Обновление настроек пользователя (как компании, так и соискателя). """
+        """Обновление настроек пользователя (как компании, так и соискателя)."""
 
         flag = self.update_settings(request, request.data, request.data)
         return POSTView.get_response(flag)
 
 
-@extend_schema_view(get=extend_schema(responses={
-    status.HTTP_200_OK: RatingsSerializer,
-    status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
-    status.HTTP_400_BAD_REQUEST: CustomErrorSerializer
-}))
+@extend_schema_view(
+    get=extend_schema(
+        responses={
+            status.HTTP_200_OK: RatingsSerializer,
+            status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
+            status.HTTP_400_BAD_REQUEST: CustomErrorSerializer,
+        }
+    )
+)
 class GetCompanyRatingsAPIView(ListAPIView):
-    """ Получение отзывов на конкретную компанию по ее username. """
+    """Получение отзывов на конкретную компанию по ее username."""
 
     serializer_class = validation_class = RatingsSerializer
     lookup_url_kwarg = "uname"
@@ -196,34 +217,35 @@ class GetCompanyRatingsAPIView(ListAPIView):
     def get_queryset(self):
         company = get_object_or_404(User, username=self.kwargs[self.lookup_url_kwarg])
         if not check_is_user_company(company):
-            return Response(CustomErrorSerializer(data={
-                "detail": "Неверный username компании.",
-                "code": "INVALID_USERNAME"
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                CustomErrorSerializer(data={"detail": "Неверный username компании.", "code": "INVALID_USERNAME"}).data,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return get_company_ratings(company).prefetch_related("applicant")
 
 
 class GetCompanyDetailAPIView(APIView):
     serializer_class = CompanyDetailSerializer
 
-    @extend_schema(responses={
-        status.HTTP_200_OK: serializer_class,
-        status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-    })
+    @extend_schema(responses={status.HTTP_200_OK: serializer_class, status.HTTP_404_NOT_FOUND: DefaultErrorSerializer})
     def get(self, request: Request, uname: str) -> Response:
-        """ Получение детальной информации о конктретной компании. """
+        """Получение детальной информации о конктретной компании."""
 
         user = get_object_or_404(User, username=uname)
         return Response(self.serializer_class(user, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
-@extend_schema_view(get=extend_schema(responses={
-    status.HTTP_200_OK: VacancyOffersSerializer,
-    status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
-    status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-}))
+@extend_schema_view(
+    get=extend_schema(
+        responses={
+            status.HTTP_200_OK: VacancyOffersSerializer,
+            status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
+            status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
+        }
+    )
+)
 class GetVacancyOffersAPIView(ListAPIView, CheckPermissionsToSeeVacancyOffersAndDeleteVacancy):
-    """ Получение всех откликов на вакансию по ее id. """
+    """Получение всех откликов на вакансию по ее id."""
 
     serializer_class = VacancyOffersSerializer
     lookup_url_kwarg = "ids"
@@ -238,33 +260,37 @@ class AddRatingAPIView(APIView, AddRatingMixin):
     serializer_class = validation_class = RatingsSerializer
     request_host = RequestHost.APIVIEW
 
-    @extend_schema(responses={
-        status.HTTP_201_CREATED: None,
-        status.HTTP_400_BAD_REQUEST: CustomErrorSerializer,
-        status.HTTP_403_FORBIDDEN: DefaultErrorSerializer
-    })
+    @extend_schema(
+        responses={
+            status.HTTP_201_CREATED: None,
+            status.HTTP_400_BAD_REQUEST: CustomErrorSerializer,
+            status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
+        }
+    )
     def post(self, request: Request, uname: str) -> Response:
-        """ Добавление отзыва на компанию со стороны соискателя. """
+        """Добавление отзыва на компанию со стороны соискателя."""
 
         flag = self.add_rating(request.user, uname, request.data)
         return POSTView.get_response(flag)
 
 
 class ApplyOfferAPIView(APIView, ApplyOfferMixin):
-    @extend_schema(responses={
-        status.HTTP_201_CREATED: None,
-        status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
-        status.HTTP_404_NOT_FOUND: DefaultErrorSerializer
-    })
+    @extend_schema(
+        responses={
+            status.HTTP_201_CREATED: None,
+            status.HTTP_403_FORBIDDEN: DefaultErrorSerializer,
+            status.HTTP_404_NOT_FOUND: DefaultErrorSerializer,
+        }
+    )
     def post(self, request: Request, ids: int) -> Response:
-        """ Принятие оффера от соискателя по его id. """
+        """Принятие оффера от соискателя по его id."""
 
         self.apply_offer(request, ids)
         return Response(status=status.HTTP_201_CREATED)
 
 
 class CompanyApplyedOffersAPIView(ListAPIView, CompanyApplyedOffersMixin):
-    """ Получение принятых компанией офферов. """
+    """Получение принятых компанией офферов."""
 
     serializer_class = CompanyApplyedOffersSerializer
     permission_classes = (IsAuthenticated, IsCompany)

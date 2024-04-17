@@ -9,8 +9,10 @@ def company_logo_path(instance, filename: str) -> str:
 
 
 def applicant_avatar_path(instance, filename: str) -> str:
-    return (f"{settings.CUSTOM_APPLICANT_AVATARS_DIR}/{instance.applicant.pk}/"
-            f"{instance.applicant.pk}.{filename.split('.')[-1]}")
+    return (
+        f"{settings.CUSTOM_APPLICANT_AVATARS_DIR}/{instance.applicant.pk}/"
+        f"{instance.applicant.pk}.{filename.split('.')[-1]}"
+    )
 
 
 class CompanySettings(models.Model):
@@ -28,8 +30,9 @@ class CompanySettings(models.Model):
 class ApplicantSettings(models.Model):
     applicant = models.ForeignKey(User, on_delete=models.CASCADE)
     timezone = models.CharField(max_length=30, default=settings.DEFAULT_USER_TIMEZONE)
-    applicant_avatar = models.ImageField(upload_to=applicant_avatar_path,
-                                         default=settings.DEFAULT_APPLICANT_AVATAR_FILENAME)
+    applicant_avatar = models.ImageField(
+        upload_to=applicant_avatar_path, default=settings.DEFAULT_APPLICANT_AVATAR_FILENAME
+    )
 
     def __str__(self):
         return self.applicant.username

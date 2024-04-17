@@ -28,5 +28,5 @@ urlpatterns = [
     path("rating/add/<str:uname>/", AddRatingAPIView.as_view(), name="add_rating"),
     path("settings/update/", UpdateSettingsAPIView.as_view(), name="update_settings"),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("schema/docs/", SpectacularSwaggerView.as_view(url_name="schema"))
+    path("schema/docs/", SpectacularSwaggerView.as_view(url_name="schema")),
 ]

@@ -38,11 +38,13 @@ class SettingsViewUtils(UpdateSettingsMixin):
         context = {}
 
         context["tzs"], company = pytz.common_timezones, check_is_user_company(request.user)
-        cs = get_user_settings(request.user) if company else False
+        cs: CompanySettings = get_user_settings(request.user) if company else False
         context["now"] = cs.timezone if company else ApplicantSettings.objects.get(applicant=request.user).timezone
         context["flag_error"], context["flag_success"] = flag_error, flag_success
-        context["form"] = ApplicantSettingsForm() if not company else CompanySettingsForm(
-            {"company_description": cs.company_description, "company_site": cs.company_site}
+        context["form"] = (
+            ApplicantSettingsForm()
+            if not company
+            else CompanySettingsForm({"company_description": cs.company_description, "company_site": cs.company_site})
         )
         return context
 
@@ -51,15 +53,13 @@ class SettingsViewUtils(UpdateSettingsMixin):
         flag_error, flag_success = (flag.error.message if not flag.status else False), flag.status
         return self._get_response(view_self, request, flag_error, flag_success, company=company)
 
-    def _get_response(self, view_self, request: HttpRequest, flag_error: Literal[False] | str,
-                      flag_success: bool, company: bool) -> HttpResponse:
+    def _get_response(
+        self, view_self, request: HttpRequest, flag_error: Literal[False] | str, flag_success: bool, company: bool
+    ) -> HttpResponse:
         if company and flag_success:
             cache.delete(f"{request.user.id}{settings.CACHE_NAMES_DELIMITER}{settings.USER_SETTINGS_CACHE_NAME}")
-            return redirect(f"{reverse('worksite_app:some_company', kwargs={'uname': request.user.username})}"
-                            f"?show_success=True")
-        else:
-            return view_self.get(
-                request=request,
-                flag_error=flag_error,
-                flag_success=flag_success
+            return redirect(
+                f"{reverse('worksite_app:some_company', kwargs={'uname': request.user.username})}" f"?show_success=True"
             )
+        else:
+            return view_self.get(request=request, flag_error=flag_error, flag_success=flag_success)

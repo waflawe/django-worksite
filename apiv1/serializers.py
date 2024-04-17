@@ -18,7 +18,7 @@ UserSettings = ApplicantSettings | CompanySettings
 
 
 def set_datetime_to_timezone(dt: datetime, timezone: str) -> Tuple[datetime | Literal[None], str | Literal[None]]:
-    """ Приведение datetime объекта к временной зоне в общем виде. """
+    """Приведение datetime объекта к временной зоне в общем виде."""
 
     if dt:
         dt = pytz.timezone(timezone).localize(datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second))
@@ -27,7 +27,7 @@ def set_datetime_to_timezone(dt: datetime, timezone: str) -> Tuple[datetime | Li
 
 
 def set_time_to_user_timezone(user: User | UserSettings, time: datetime, attribute_name: str = "time_added") -> Dict:
-    """ Приведение datetime объекта к временной зоне, установленной в настройках текущего пользователя. """
+    """Приведение datetime объекта к временной зоне, установленной в настройках текущего пользователя."""
 
     user_timezone = get_timezone(user)
     if user_timezone:
@@ -49,7 +49,7 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanySettings
         fields = None
-        extra_kwargs = {}
+        extra_kwargs: Dict = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -58,7 +58,7 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
         else:
             self.Meta.fields = "timezone", "company_logo", "company_description", "company_site"
         for field in self.Meta.fields:
-            self.Meta.extra_kwargs[field] = {'required': False}
+            self.Meta.extra_kwargs[field] = {"required": False}
 
 
 class ApplicantSettingsSerializer(serializers.ModelSerializer):
@@ -111,10 +111,7 @@ class VacancysSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vacancy
-        fields = (
-            "id", "company", "name", "money", "experience",
-            "city", "time_added", "archived"
-        )
+        fields = ("id", "company", "name", "money", "experience", "city", "time_added", "archived")
 
     @classmethod
     def setup_eager_loading(cls, queryset) -> QuerySet:
@@ -136,7 +133,7 @@ class VacancyDetailSerializer(VacancysSerializer):
         read_only_fields = "pk", "company", "time_added", "archived"
         model = Vacancy
         fields = *read_only_fields, *immutable_fields
-        extra_kwargs = {}
+        extra_kwargs: Dict = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -155,8 +152,11 @@ class _BaseOfferSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_resume(self, offer):
-        return settings.MEDIA_URL + offer.resume.path.split(str(settings.BASE_DIR))[-1].split(settings.MEDIA_ROOT)[-1] \
-            if offer.resume else None
+        return (
+            settings.MEDIA_URL + offer.resume.path.split(str(settings.BASE_DIR))[-1].split(settings.MEDIA_ROOT)[-1]
+            if offer.resume
+            else None
+        )
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_applicant(self, offer):

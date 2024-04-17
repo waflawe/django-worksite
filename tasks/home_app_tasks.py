@@ -11,11 +11,11 @@ from services.common_utils import get_path_to_crop_photo
 
 @shared_task
 def make_center_crop(applicant_avatar_path: str) -> Literal[None]:
-    """ Функция для обрезки изображения по центру. """
+    """Функция для обрезки изображения по центру."""
 
-    _center_crop(Image.open(os.path.join(settings.BASE_DIR / applicant_avatar_path))).save(os.path.join(
-        get_path_to_crop_photo(applicant_avatar_path)
-    ))
+    _center_crop(Image.open(os.path.join(settings.BASE_DIR / applicant_avatar_path))).save(
+        os.path.join(get_path_to_crop_photo(applicant_avatar_path))
+    )
 
 
 def _center_crop(img: Im) -> Im:

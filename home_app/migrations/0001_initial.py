@@ -8,7 +8,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -17,24 +16,56 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='ApplicantSettings',
+            name="ApplicantSettings",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timezone', models.CharField(default='Europe/London', max_length=30)),
-                ('applicant_avatar', models.ImageField(default='default_applicant_avatar.jpg', upload_to=home_app.models.applicant_avatar_path)),
-                ('applicant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("timezone", models.CharField(default="Europe/London", max_length=30)),
+                (
+                    "applicant_avatar",
+                    models.ImageField(
+                        default="default_applicant_avatar.jpg", upload_to=home_app.models.applicant_avatar_path
+                    ),
+                ),
+                (
+                    "applicant",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='CompanySettings',
+            name="CompanySettings",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timezone', models.CharField(default='Europe/London', max_length=30)),
-                ('company_logo', models.ImageField(default='default_company_logo.png', upload_to=home_app.models.company_logo_path)),
-                ('company_description', models.TextField(default='', validators=[django.core.validators.MaxLengthValidator(5000), django.core.validators.MinLengthValidator(64)])),
-                ('company_site', models.URLField(blank=True, null=True)),
-                ('rating', models.FloatField(default=0, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(5)])),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("timezone", models.CharField(default="Europe/London", max_length=30)),
+                (
+                    "company_logo",
+                    models.ImageField(default="default_company_logo.png", upload_to=home_app.models.company_logo_path),
+                ),
+                (
+                    "company_description",
+                    models.TextField(
+                        default="",
+                        validators=[
+                            django.core.validators.MaxLengthValidator(5000),
+                            django.core.validators.MinLengthValidator(64),
+                        ],
+                    ),
+                ),
+                ("company_site", models.URLField(blank=True, null=True)),
+                (
+                    "rating",
+                    models.FloatField(
+                        default=0,
+                        validators=[
+                            django.core.validators.MinValueValidator(0),
+                            django.core.validators.MaxValueValidator(5),
+                        ],
+                    ),
+                ),
+                (
+                    "company",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+                ),
             ],
         ),
     ]

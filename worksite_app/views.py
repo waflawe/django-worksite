@@ -31,15 +31,16 @@ def home(request: HttpRequest) -> HttpResponse:
 
 
 class AddVacancyView(View):
-    def get(self, request: HttpRequest, form_data: Optional[dict] = None, flag_error: Optional[str] = False) -> \
-            HttpResponse:
+    def get(
+        self, request: HttpRequest, form_data: Optional[dict] = None, flag_error: Optional[str] = None
+    ) -> HttpResponse:
         if not check_is_user_company(request.user):
             raise PermissionDenied
         context = {
             "choices_experience": EXPERIENCE_CHOICES,
             "choices_cities": FILTERED_CITIES,
             "flag_error": flag_error,
-            "form": AddVacancyForm(form_data)
+            "form": AddVacancyForm(form_data),
         }
         return render(request, "worksite_app/add_vacancy.html", context=context)
 
@@ -50,9 +51,10 @@ class AddVacancyView(View):
 
 
 class SomeVacancyView(View):
-    def get(self, request: HttpRequest, ids: int, flag_success: Optional[bool] = None,
-            error_code: Optional[int] = None) -> HttpResponse:
-        context = SomeVacancyViewUtils().some_vacancy_utils(request, ids, flag_success, error_code)
+    def get(
+        self, request: HttpRequest, ids: int, flag_success: Optional[bool] = None, error_message: Optional[str] = None
+    ) -> HttpResponse:
+        context = SomeVacancyViewUtils().some_vacancy_utils(request, ids, flag_success, error_message)
         return render(request, "worksite_app/some_vacancy.html", context=context)
 
     def post(self, request: HttpRequest, ids: int) -> HttpResponse:
@@ -111,8 +113,9 @@ class DeleteVacancyView(View):
 
     def post(self, request: HttpRequest, ids: int) -> HttpResponse:
         DeleteVacancyUtils().delete_vacancy_utils_post(request, ids)
-        return redirect(f"{reverse('worksite_app:some_company', kwargs={'uname': request.user.username})}"
-                        f"?show_success=True")
+        return redirect(
+            f"{reverse('worksite_app:some_company', kwargs={'uname': request.user.username})}" f"?show_success=True"
+        )
 
 
 class WithdrawOfferView(View):
@@ -126,5 +129,8 @@ class WithdrawOfferView(View):
 
 
 def company_applyed_offers(request: HttpRequest) -> HttpResponse:
-    return render(request, "worksite_app/company_applyed_offers.html",
-                  context=CompanyApplyedOffersUtils().company_applyed_offers(request))
+    return render(
+        request,
+        "worksite_app/company_applyed_offers.html",
+        context=CompanyApplyedOffersUtils().company_applyed_offers(request),
+    )
